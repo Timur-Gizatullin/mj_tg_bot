@@ -42,3 +42,54 @@ keyboard_interactions = {
         ],
     ]
 }
+
+keyboard_solo_interactions = {
+    "inline_keyboard": [
+        [
+            {
+                "text": "🪄Vary(Strong)",
+                "callback_data": "vary_strong",
+            },
+            {
+                "text": "🪄Vary(Subtle)",
+                "callback_data": "vary_subtle",
+            },
+            {
+                "text": "🖌Vary(Region)",
+                "callback_data": "vary_region",
+            },
+        ],
+        [
+            {
+                "text": "🔍Zoom Out 2x",
+                "callback_data": "zoom_2",
+            },
+            {
+                "text": "🔍Zoom Out 1.5x",
+                "callback_data": "zoom_1.5",
+            },
+            {
+                "text": "🔍Custom Zoom",
+                "callback_data": "zoom_custom",
+            },
+        ],
+[
+            {
+                "text": "⬅️",
+                "callback_data": "pan_left",
+            },
+            {
+                "text": "➡️",
+                "callback_data": "pan_right",
+            },
+            {
+                "text": "⬆️",
+                "callback_data": "pan_up",
+            },
+            {
+                "text": "⬇️",
+                "callback_data": "pan_down",
+            },
+        ],
+    ]
+}
