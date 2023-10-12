@@ -73,7 +73,7 @@ keyboard_solo_interactions = {
                 "callback_data": "zoom_custom",
             },
         ],
-[
+        [
             {
                 "text": "⬅️",
                 "callback_data": "pan_left",

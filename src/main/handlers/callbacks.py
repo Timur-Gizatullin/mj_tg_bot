@@ -1,63 +1,23 @@
 import os
 
 import django
-import requests
 from aiogram import Router, types
 
-from main.handlers.utils import INTERACTION_URL, _trigger_payload
+from main.handlers.utils import (
+    send_pan_trigger,
+    send_reset_trigger,
+    send_upsample_trigger,
+    send_variation_trigger,
+    send_vary_trigger,
+    send_zoom_trigger,
+)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
 from main.models import DiscordQueue  # noqa: E402
-from t_bot.settings import DISCORD_USER_TOKEN  # noqa: E402
 
 callback_router = Router()
-
-
-async def send_variation_trigger(variation_index: str, message_id: str, message_hash: str) -> int:
-    kwargs = {
-        "message_flags": 0,
-        "message_id": message_id,
-    }
-    payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::variation::{variation_index}::{message_hash}"}, **kwargs
-    )
-    header = {"authorization": DISCORD_USER_TOKEN}
-
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response.status_code
-
-
-async def send_upsample_trigger(variation_index: str, message_id: str, message_hash: str) -> int:
-    kwargs = {
-        "message_flags": 0,
-        "message_id": message_id,
-    }
-    payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample::{variation_index}::{message_hash}"}, **kwargs
-    )
-    header = {"authorization": DISCORD_USER_TOKEN}
-
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response.status_code
-
-
-async def send_reset_trigger(message_id: str, message_hash: str) -> int:
-    kwargs = {
-        "message_flags": 0,
-        "message_id": message_id,
-    }
-    payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::reroll::0::{message_hash}::SOLO"}, **kwargs
-    )
-    header = {"authorization": DISCORD_USER_TOKEN}
-
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response.status_code
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("V"))
@@ -121,5 +81,58 @@ async def callback_reset(callback: types.CallbackQuery):
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
 
     await send_reset_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash)
+
+    await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("vary"))
+async def callback_vary(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    telegram_chat_id = callback.message.chat.id
+
+    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+
+    if action == "strong":
+        await send_vary_trigger(
+            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="high_variation"
+        )
+    elif action == "subtle":
+        await send_vary_trigger(
+            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="low_variation"
+        )
+    elif action == "region":
+        await send_vary_trigger(
+            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="variation"
+        )
+
+    await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("zoom"))
+async def callback_zoom(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    telegram_chat_id = callback.message.chat.id
+
+    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+
+    if action == "2":
+        await send_zoom_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, zoomout=action)
+    elif action == "1.5":
+        await send_zoom_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, zoomout=action)
+    elif action == "custom":
+        # TODO
+        pass
+
+    await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("pan"))
+async def callback_pan(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    telegram_chat_id = callback.message.chat.id
+
+    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+
+    await send_pan_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, direction=action)
 
     await callback.answer()
