@@ -66,8 +66,6 @@ async def create_referral(message: Message, state) -> None:
     referral_key = await Referral.objects.create_referral(referrer=referrer)
     referral = f"{BOT_HOST}{referral_key}"
 
-    print("asd")
-
     await message.answer(f"Ваша ссылка: {referral}")
 
 
@@ -76,11 +74,14 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     await state.clear()
     prompt = command.args
 
+    telegram_user = await User.objects.get_user_by_username(username=message.from_user.username)
+
     ban_words = await BanWord.objects.get_active_ban_words()
-    censor_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
     if message.text and await is_has_censor(prompt, ban_words):
-        await message.answer(censor_message)
+        await message.answer(censor_message_answer)
+        return
 
     payload = _trigger_payload(
         2,
@@ -95,8 +96,9 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
-    await DiscordQueue.objects.create_queue(telegram_chat_id=message.chat.id, prompt=prompt)
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-    print(response)
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user
+    )
+    requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    await message.answer("Запрос обрабатывается")
+    await message.answer("Запрос отправлен")

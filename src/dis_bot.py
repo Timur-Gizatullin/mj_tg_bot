@@ -20,8 +20,7 @@ class MyClient(discord.Client):
         print("Logged on as", self.user)
 
     async def on_message(self, message):
-        # don't respond to ourselves
-        if message.author == self.user:
+        if message.author == self.user or len(message.attachments) == 0:
             return
 
         prompt = str(message.content).split("**")[1]
@@ -31,8 +30,7 @@ class MyClient(discord.Client):
         if not queue:
             return
 
-        if len(message.attachments) != 0:
-            await self._send_photo_to_telegram(message=message, queue=queue)
+        await self._send_photo_to_telegram(message=message, queue=queue)
 
     async def _send_photo_to_telegram(self, message, queue: DiscordQueue):
         filename = message.attachments[0].filename

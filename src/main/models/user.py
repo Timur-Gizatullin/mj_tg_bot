@@ -1,15 +1,21 @@
 from asgiref.sync import sync_to_async
-from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager as AbstractUserManager
 from django.db import models
 
 from main.enums import UserRoleEnum
 
 
-class UserManager(BaseUserManager):
+class UserManager(AbstractUserManager):
     @sync_to_async()
     def get_user_by_username(self, username: str) -> "User":
         return self.filter(telegram_username=username).first()
+
+    @sync_to_async()
+    def get_user_by_chat_id(self, chat_id: str) -> "User":
+        return self.filter(chat_id=chat_id).first()
+
+    def get_user_by_id(self, chat_id: str) -> "User":
+        return self.filter(chat_id=chat_id).first()
 
     @sync_to_async()
     def get_or_create_async(self, telegram_username: int, chat_id: int) -> "User":
@@ -24,9 +30,9 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     telegram_username: str = models.CharField(unique=True)
-    chat_id: int = models.IntegerField(unique=True, null=True)
+    chat_id: str = models.IntegerField(unique=True, null=True)
     generations_count: int = models.IntegerField(null=False, default=10)
-    role = models.IntegerField(choices=UserRoleEnum.get_choices())
+    role = models.IntegerField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
 
     objects = UserManager()
 

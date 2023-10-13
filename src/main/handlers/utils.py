@@ -2,6 +2,7 @@ from typing import Any
 
 import requests
 
+from main.models import User, DiscordQueue
 from t_bot.settings import CHANNEL_ID, DISCORD_USER_TOKEN, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
@@ -20,32 +21,40 @@ def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, An
     return payload
 
 
-async def send_variation_trigger(variation_index: str, message_id: str, message_hash: str) -> int:
+async def send_variation_trigger(variation_index: str, queue: DiscordQueue, user: User) -> int:
     kwargs = {
         "message_flags": 0,
-        "message_id": message_id,
+        "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::variation::{variation_index}::{message_hash}"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::JOB::variation::{variation_index}::{queue.message_hash}"}, **kwargs
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
+    )
 
     return response.status_code
 
 
-async def send_upsample_trigger(variation_index: str, message_id: str, message_hash: str) -> int:
+async def send_upsample_trigger(upsample_index: str, queue: DiscordQueue, user: User) -> int:
     kwargs = {
         "message_flags": 0,
-        "message_id": message_id,
+        "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample::{variation_index}::{message_hash}"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample::{upsample_index}::{queue.message_hash}"}, **kwargs
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
+    )
 
     return response.status_code
 
@@ -62,49 +71,63 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
+    #TODO Update queue status to CANCELLED
+
     return response.status_code
 
 
-async def send_vary_trigger(message_id: str, message_hash: str, vary_type: str) -> int:
+async def send_vary_trigger(vary_type: str, queue: DiscordQueue, user: User) -> int:
     kwargs = {
         "message_flags": 0,
-        "message_id": message_id,
+        "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::{vary_type}::1::{message_hash}::SOLO"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::JOB::{vary_type}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
+    )
+
     return response.status_code
 
 
-async def send_zoom_trigger(message_id: str, message_hash: str, zoomout: str) -> int:
+async def send_zoom_trigger(zoomout: str, queue: DiscordQueue, user: User) -> int:
     kwargs = {
         "message_flags": 0,
-        "message_id": message_id,
+        "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::Outpaint::{zoomout}::1::{message_hash}::SOLO"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::Outpaint::{zoomout}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
+    )
+
     return response.status_code
 
 
-async def send_pan_trigger(message_id: str, message_hash: str, direction: str) -> int:
+async def send_pan_trigger(direction: str, queue: DiscordQueue, user: User) -> int:
     kwargs = {
         "message_flags": 0,
-        "message_id": message_id,
+        "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::pan_{direction}::1::{message_hash}::SOLO"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::JOB::pan_{direction}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    await DiscordQueue.objects.create_queue(
+        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
+    )
 
     return response.status_code

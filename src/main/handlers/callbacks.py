@@ -15,7 +15,7 @@ from main.handlers.utils import (
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import DiscordQueue  # noqa: E402
+from main.models import DiscordQueue, User  # noqa: E402
 
 callback_router = Router()
 
@@ -25,23 +25,27 @@ async def callbacks_variations(callback: types.CallbackQuery):
     action = callback.data
     telegram_chat_id = callback.message.chat.id
 
+    print("callbacks.py")
+    print(callback.message)
+
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "V1":
         await send_variation_trigger(
-            variation_index="1", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            variation_index="1", queue=queue, user=telegram_user
         )
     elif action == "V2":
         await send_variation_trigger(
-            variation_index="2", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            variation_index="2", queue=queue, user=telegram_user
         )
     elif action == "V3":
         await send_variation_trigger(
-            variation_index="3", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            variation_index="3", queue=queue, user=telegram_user
         )
     elif action == "V4":
         await send_variation_trigger(
-            variation_index="4", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            variation_index="4", queue=queue, user=telegram_user
         )
 
     await callback.answer()
@@ -53,22 +57,23 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     telegram_chat_id = callback.message.chat.id
 
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "U1":
         await send_upsample_trigger(
-            variation_index="1", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            upsample_index="1", queue=queue, user=telegram_user
         )
     elif action == "U2":
         await send_upsample_trigger(
-            variation_index="2", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            upsample_index="2", queue=queue, user=telegram_user
         )
     elif action == "U3":
         await send_upsample_trigger(
-            variation_index="3", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            upsample_index="3", queue=queue, user=telegram_user
         )
     elif action == "U4":
         await send_upsample_trigger(
-            variation_index="4", message_id=queue.discord_message_id, message_hash=queue.message_hash
+            upsample_index="4", queue=queue, user=telegram_user
         )
 
     await callback.answer()
@@ -91,18 +96,19 @@ async def callback_vary(callback: types.CallbackQuery):
     telegram_chat_id = callback.message.chat.id
 
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "strong":
         await send_vary_trigger(
-            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="high_variation"
+             vary_type="high_variation", user=telegram_user, queue=queue
         )
     elif action == "subtle":
         await send_vary_trigger(
-            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="low_variation"
+            vary_type="low_variation", user=telegram_user, queue=queue
         )
     elif action == "region":
         await send_vary_trigger(
-            message_id=queue.discord_message_id, message_hash=queue.message_hash, vary_type="variation"
+            vary_type="variation", user=telegram_user, queue=queue
         )
 
     await callback.answer()
@@ -114,11 +120,12 @@ async def callback_zoom(callback: types.CallbackQuery):
     telegram_chat_id = callback.message.chat.id
 
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "2":
-        await send_zoom_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, zoomout=action)
+        await send_zoom_trigger(queue=queue, zoomout=action, user=telegram_user)
     elif action == "1.5":
-        await send_zoom_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, zoomout=action)
+        await send_zoom_trigger(queue=queue, zoomout=action, user=telegram_user)
     elif action == "custom":
         # TODO
         pass
@@ -132,7 +139,8 @@ async def callback_pan(callback: types.CallbackQuery):
     telegram_chat_id = callback.message.chat.id
 
     queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_telegram_chat_id(telegram_chat_id=telegram_chat_id)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    await send_pan_trigger(message_id=queue.discord_message_id, message_hash=queue.message_hash, direction=action)
+    await send_pan_trigger(queue=queue, direction=action, user=telegram_user)
 
     await callback.answer()

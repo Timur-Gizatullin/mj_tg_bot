@@ -5,7 +5,7 @@ from django.db import models
 class DiscordQueueManager(models.Manager):
     @sync_to_async()
     def get_queue_by_prompt(self, prompt: str) -> "DiscordQueue":
-        return self.filter(prompt=prompt).order_by("created_at").first()
+        return self.filter(prompt=prompt).order_by("created_at", "telegram_user__role").first()
 
     @sync_to_async()
     def get_queue_by_telegram_chat_id(self, telegram_chat_id: str) -> "DiscordQueue":
@@ -35,7 +35,8 @@ class DiscordQueueManager(models.Manager):
 
 class DiscordQueue(models.Model):
     prompt = models.CharField()
-    telegram_chat_id = models.CharField()
+    telegram_chat_id = models.CharField(null=True)
+    telegram_user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="prompts", verbose_name="user")
     discord_message_id = models.CharField(null=True)
     message_hash = models.CharField(null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True)
