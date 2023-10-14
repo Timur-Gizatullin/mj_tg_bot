@@ -2,7 +2,7 @@ from typing import Any
 
 import requests
 
-from main.models import User, DiscordQueue
+from main.models import DiscordQueue, User
 from t_bot.settings import CHANNEL_ID, DISCORD_USER_TOKEN, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
@@ -71,7 +71,7 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    #TODO Update queue status to CANCELLED
+    # TODO Update queue status to CANCELLED
 
     return response.status_code
 

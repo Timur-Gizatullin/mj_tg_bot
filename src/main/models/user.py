@@ -1,5 +1,6 @@
 from asgiref.sync import sync_to_async
-from django.contrib.auth.models import AbstractUser, UserManager as AbstractUserManager
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import UserManager as AbstractUserManager
 from django.db import models
 
 from main.enums import UserRoleEnum

@@ -30,22 +30,22 @@ class MyClient(discord.Client):
         if not queue:
             return
 
-        await self._send_photo_to_telegram(message=message, queue=queue)
+        await self._send_photo_to_telegram(message=message, queue=queue, prompt=prompt)
 
-    async def _send_photo_to_telegram(self, message, queue: DiscordQueue):
+    async def _send_photo_to_telegram(self, message, queue: DiscordQueue, prompt: str):
         filename = message.attachments[0].filename
         message_hash = filename.split("_")[-1].split(".")[0]
         file_url = message.attachments[0].url
         raw_image = requests.get(file_url).content
 
-        with NamedTemporaryFile("wb+") as f:
+        with NamedTemporaryFile(mode="wb+", prefix=message_hash) as f:
             f.write(raw_image)
             f.seek(0)
-            files = {"photo": f}
-            data = {"reply_markup": json.dumps(keyboard_interactions)}
+            files = {"document": f}
+            data = {"reply_markup": json.dumps(keyboard_interactions), "caption": prompt}
 
             requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto?chat_id={queue.telegram_chat_id}",
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendFile?chat_id={queue.telegram_chat_id}",
                 files=files,
                 data=data,
             )

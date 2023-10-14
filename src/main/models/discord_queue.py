@@ -8,8 +8,8 @@ class DiscordQueueManager(models.Manager):
         return self.filter(prompt=prompt).order_by("created_at", "telegram_user__role").first()
 
     @sync_to_async()
-    def get_queue_by_telegram_chat_id(self, telegram_chat_id: str) -> "DiscordQueue":
-        return self.filter(telegram_chat_id=telegram_chat_id).order_by("created_at").first()
+    def get_queue_by_message_hash(self, message_hash: str) -> "DiscordQueue":
+        return self.filter(message_hash=message_hash).order_by("created_at").first()
 
     @sync_to_async()
     def delete_queue(self, queue: "DiscordQueue") -> None:
