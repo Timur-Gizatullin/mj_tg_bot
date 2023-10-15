@@ -18,6 +18,7 @@ requests = "^2.31.0"
 discord-py = "^2.3.2"
 pillow = "^10.0.1"
 httplib2 = "^0.22.0"
+loguru = "^0.7.2"
 
 
 [tool.poetry.group.dev.dependencies]

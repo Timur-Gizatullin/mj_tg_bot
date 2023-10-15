@@ -1,3 +1,5 @@
+from typing import Any
+
 keyboard_interactions = {
     "inline_keyboard": [
         [
@@ -93,3 +95,39 @@ keyboard_solo_interactions = {
         ],
     ]
 }
+
+keyboard_pan_interactions = {
+    "inline_keyboard": [
+        [
+            {
+                "text": "U1",
+                "callback_data": "U1",
+            },
+            {
+                "text": "U2",
+                "callback_data": "U2",
+            },
+            {
+                "text": "U3",
+                "callback_data": "U3",
+            },
+            {
+                "text": "U4",
+                "callback_data": "U4",
+            },
+            {
+                "text": "🔄",
+                "callback_data": "reset",
+            },
+        ],
+    ]
+}
+
+
+async def get_keyboard(prompt: str) -> dict[str, Any]:
+    if prompt.find("Image") != -1:
+        return keyboard_solo_interactions
+    if prompt.find("Pan") != -1:
+        return keyboard_pan_interactions
+
+    return keyboard_interactions

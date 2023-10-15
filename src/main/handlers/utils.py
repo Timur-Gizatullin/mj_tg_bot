@@ -33,10 +33,6 @@ async def send_variation_trigger(variation_index: str, queue: DiscordQueue, user
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
-    )
-
     return response.status_code
 
 
@@ -51,10 +47,6 @@ async def send_upsample_trigger(upsample_index: str, queue: DiscordQueue, user: 
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
-    )
 
     return response.status_code
 
@@ -71,8 +63,6 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    # TODO Update queue status to CANCELLED
-
     return response.status_code
 
 
@@ -88,10 +78,6 @@ async def send_vary_trigger(vary_type: str, queue: DiscordQueue, user: User) -> 
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
-    )
-
     return response.status_code
 
 
@@ -101,15 +87,13 @@ async def send_zoom_trigger(zoomout: str, queue: DiscordQueue, user: User) -> in
         "message_id": queue.discord_message_id,
     }
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::Outpaint::{zoomout}::1::{queue.message_hash}::SOLO"}, **kwargs
+        3,
+        {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(zoomout)*50}::1::{queue.message_hash}::SOLO"},
+        **kwargs,
     )
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
-    )
 
     return response.status_code
 
@@ -125,9 +109,5 @@ async def send_pan_trigger(direction: str, queue: DiscordQueue, user: User) -> i
     header = {"authorization": DISCORD_USER_TOKEN}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=queue.telegram_chat_id, prompt=queue.prompt, telegram_user=user
-    )
 
     return response.status_code

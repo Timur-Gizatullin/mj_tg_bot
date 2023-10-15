@@ -6,6 +6,7 @@ from aiogram.types import Message
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
+from main.handlers.queue import queue_handler
 from main.handlers.utils import INTERACTION_URL, _trigger_payload
 from main.models import BanWord, DiscordQueue, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
@@ -74,7 +75,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     await state.clear()
     prompt = command.args
 
-    telegram_user = await User.objects.get_user_by_username(username=message.from_user.username)
+    telegram_user: User = await User.objects.get_user_by_username(username=message.from_user.username)
 
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
@@ -83,22 +84,26 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         await message.answer(censor_message_answer)
         return
 
-    payload = _trigger_payload(
-        2,
-        {
-            "version": "1118961510123847772",
-            "id": "938956540159881230",
-            "name": "imagine",
-            "type": 1,
-            "options": [{"type": 3, "name": "prompt", "value": prompt}],
-            "attachments": [],
-        },
-    )
-    header = {"authorization": DISCORD_USER_TOKEN}
+    async def imagine():
+        payload = _trigger_payload(
+            2,
+            {
+                "version": "1118961510123847772",
+                "id": "938956540159881230",
+                "name": "imagine",
+                "type": 1,
+                "options": [{"type": 3, "name": "prompt", "value": prompt}],
+                "attachments": [],
+            },
+        )
+        header = {"authorization": DISCORD_USER_TOKEN}
 
-    await DiscordQueue.objects.create_queue(
-        telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user
-    )
-    requests.post(INTERACTION_URL, json=payload, headers=header)
+        await DiscordQueue.objects.create_queue(
+            telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user
+        )
 
-    await message.answer("Запрос отправлен")
+        requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    await queue_handler.add_task(imagine(), user_role=telegram_user.role)
+
+    await message.answer("Запрос добавлен в очередь")
