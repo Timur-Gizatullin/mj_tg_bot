@@ -20,6 +20,7 @@ pillow = "^10.0.1"
 httplib2 = "^0.22.0"
 loguru = "^0.7.2"
 python-decouple = "^3.8"
+redis = "^5.0.1"
 
 
 [tool.poetry.group.dev.dependencies]

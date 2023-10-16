@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from server.settings.components import config
+from decouple import config
 
 CONFIG_REDIS_HOST = config("REDIS_HOST", default="")
 CONFIG_REDIS_PORT = config("REDIS_PORT", default="")
@@ -20,7 +20,6 @@ def get_redis_url() -> str:
 
 
 REDIS_URL = get_redis_url()
-
 
 CACHES = {
     "default": {

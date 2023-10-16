@@ -7,7 +7,11 @@ from aiogram.types import Message
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
 from main.handlers.queue import queue_handler
-from main.handlers.utils import INTERACTION_URL, _trigger_payload, get_loaded_discord_user
+from main.handlers.utils import (
+    INTERACTION_URL,
+    _trigger_payload,
+    get_loaded_discord_user,
+)
 from main.models import BanWord, DiscordQueue, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
 

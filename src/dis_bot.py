@@ -11,10 +11,10 @@ from loguru import logger
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import DiscordQueue, User  # noqa: E402
-from t_bot.settings import TELEGRAM_TOKEN  # noqa: E402
 from main.handlers.queue import send_action
 from main.keyboards import get_keyboard
+from main.models import DiscordQueue, User  # noqa: E402
+from t_bot.settings import TELEGRAM_TOKEN  # noqa: E402
 
 
 class DiscordMiddleWare(discord.Client):

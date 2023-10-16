@@ -7,13 +7,11 @@ from discord.ext import tasks
 from loguru import logger
 
 from main.enums import UserRoleEnum
-from main.models import MjUser
 
 
 class QueueHandler:
     discord_queue: list[Task] = []
     random_delay = random.randint(1, 10)
-    unbanned_users: list[MjUser]
 
     async def add_task(self, action: Coroutine, user_role: UserRoleEnum) -> None:
         new_task = asyncio.create_task(action)
@@ -37,9 +35,3 @@ queue_handler = QueueHandler()
 @tasks.loop(seconds=5.0)
 async def send_action():
     await queue_handler.release_and_remove_first_action()
-
-
-@send_action.before_loop
-async def set_unbanned_users():
-    queue_handler.unbanned_users = await MjUser.objects.get_mj_users()
-

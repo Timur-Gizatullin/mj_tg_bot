@@ -2,12 +2,12 @@ from typing import Any
 
 import requests
 
-from main.models import DiscordQueue, User, MjUser
+from main.models import DiscordQueue, MjUser, User
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
 unbanned_discord_users: list[MjUser] = MjUser.objects.filter(is_banned=False).all()
-unloaded_discord_users: list[MjUser] #TODO remove it to redis
+unloaded_discord_users: list[MjUser]  # TODO remove it to redis
 
 
 async def get_loaded_discord_user():
