@@ -13,7 +13,7 @@ django.setup()
 
 from main.handlers.queue import send_action
 from main.keyboards import get_keyboard
-from main.models import DiscordQueue, User  # noqa: E402
+from main.models import Prompt, User  # noqa: E402
 from t_bot.settings import TELEGRAM_TOKEN  # noqa: E402
 
 
@@ -36,14 +36,14 @@ class DiscordMiddleWare(discord.Client):
         filename = message.attachments[0].filename
         message_hash = filename.split("_")[-1].split(".")[0]
 
-        queue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+        queue = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
 
         if not queue:
-            queue = await DiscordQueue.objects.get_queue_by_prompt(prompt=prompt)
+            queue = await Prompt.objects.get_queue_by_prompt(prompt=prompt)
 
         file_url = message.attachments[0].url
         raw_image = requests.get(file_url).content
-
+        print(message)
         keyboard = await get_keyboard(prompt=message.content)
 
         with NamedTemporaryFile(mode="wb+", prefix=f"{message_hash}_", suffix=".png") as f:
@@ -60,12 +60,12 @@ class DiscordMiddleWare(discord.Client):
 
         if message.content.find("Image") == -1 and message.content.find("Variations") == -1:
             logger.info("UPDATE")
-            await DiscordQueue.objects.update_message_hash(queue=queue, message_hash=message_hash)
-            await DiscordQueue.objects.update_message_id(queue=queue, discord_message_id=message.id)
+            await Prompt.objects.update_message_hash(queue=queue, message_hash=message_hash)
+            await Prompt.objects.update_message_id(queue=queue, discord_message_id=message.id)
         else:
             logger.info("CREATE")
             telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
-            await DiscordQueue.objects.create_queue(
+            await Prompt.objects.create_queue(
                 prompt=prompt,
                 telegram_chat_id=queue.telegram_chat_id,
                 telegram_user=telegram_user,

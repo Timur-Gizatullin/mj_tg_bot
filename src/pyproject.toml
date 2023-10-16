@@ -21,6 +21,8 @@ httplib2 = "^0.22.0"
 loguru = "^0.7.2"
 python-decouple = "^3.8"
 redis = "^5.0.1"
+celery = "^5.3.4"
+django-celery-beat = "^2.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

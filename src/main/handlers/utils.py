@@ -2,7 +2,7 @@ from typing import Any
 
 import requests
 
-from main.models import DiscordQueue, MjUser, User
+from main.models import Prompt, MjUser, User
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
@@ -11,14 +11,14 @@ unloaded_discord_users: list[MjUser]  # TODO remove it to redis
 
 
 async def get_loaded_discord_user():
-    if len(unloaded_discord_users) != 0:
+    if len(unbanned_discord_users) != 0:
         discord_user = unbanned_discord_users.pop(0)
         unloaded_discord_users.append(discord_user)
-        return discord_user
+        return discord_user.token
     else:
         unbanned_discord_users.extend(unloaded_discord_users)
         unloaded_discord_users.clear()
-        return unbanned_discord_users.pop(0)
+        return unbanned_discord_users.pop(0).token
 
 
 def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, Any]:
@@ -34,7 +34,7 @@ def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, An
     return payload
 
 
-async def send_variation_trigger(variation_index: str, queue: DiscordQueue, user: User) -> int:
+async def send_variation_trigger(variation_index: str, queue: Prompt, user: User) -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -49,7 +49,7 @@ async def send_variation_trigger(variation_index: str, queue: DiscordQueue, user
     return response.status_code
 
 
-async def send_upsample_trigger(upsample_index: str, queue: DiscordQueue, user: User) -> int:
+async def send_upsample_trigger(upsample_index: str, queue: Prompt, user: User) -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -79,7 +79,7 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
     return response.status_code
 
 
-async def send_vary_trigger(vary_type: str, queue: DiscordQueue, user: User) -> int:
+async def send_vary_trigger(vary_type: str, queue: Prompt, user: User) -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -94,7 +94,7 @@ async def send_vary_trigger(vary_type: str, queue: DiscordQueue, user: User) -> 
     return response.status_code
 
 
-async def send_zoom_trigger(zoomout: str, queue: DiscordQueue, user: User) -> int:
+async def send_zoom_trigger(zoomout: str, queue: Prompt, user: User) -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -111,7 +111,7 @@ async def send_zoom_trigger(zoomout: str, queue: DiscordQueue, user: User) -> in
     return response.status_code
 
 
-async def send_pan_trigger(direction: str, queue: DiscordQueue, user: User) -> int:
+async def send_pan_trigger(direction: str, queue: Prompt, user: User) -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,

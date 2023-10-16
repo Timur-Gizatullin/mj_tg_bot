@@ -123,8 +123,43 @@ keyboard_pan_interactions = {
     ]
 }
 
+keyboard_solo_pan_interactions = {
+    "inline_keyboard": [
+        [
+            {
+                "text": "🔍Zoom Out 2x",
+                "callback_data": "zoom_2",
+            },
+            {
+                "text": "🔍Zoom Out 1.5x",
+                "callback_data": "zoom_1.5",
+            },
+            {
+                "text": "🔍Custom Zoom",
+                "callback_data": "zoom_custom",
+            },
+        ],
+        [
+            {
+                "text": "⬅️",
+                "callback_data": "pan_left",
+            },
+            {
+                "text": "➡️",
+                "callback_data": "pan_right",
+            },
+            {
+                "text": "️↔️",
+                "callback_data": "zoom_2",
+            },
+        ],
+    ]
+}
+
 
 async def get_keyboard(prompt: str) -> dict[str, Any]:
+    if prompt.find("Image") != -1:
+        return keyboard_solo_pan_interactions
     if prompt.find("Image") != -1:
         return keyboard_solo_interactions
     if prompt.find("Pan") != -1:

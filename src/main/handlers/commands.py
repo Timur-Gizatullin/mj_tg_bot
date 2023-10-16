@@ -12,7 +12,7 @@ from main.handlers.utils import (
     _trigger_payload,
     get_loaded_discord_user,
 )
-from main.models import BanWord, DiscordQueue, Referral, TelegramAnswer, User
+from main.models import BanWord, Prompt, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
 
 dp = Dispatcher()
@@ -99,11 +99,9 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
                 "attachments": [],
             },
         )
-        header = {"authorization": await get_loaded_discord_user()}
+        header = {"authorization": "MTE2MDg1MzUxNTMzODUxNDQ2Ng.GPAOXT.YIDv2vEydD56fKpJCFAnE88Ffx0x3L7sck1gSw"}
 
-        await DiscordQueue.objects.create_queue(
-            telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user
-        )
+        await Prompt.objects.create_queue(telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user)
 
         requests.post(INTERACTION_URL, json=payload, headers=header)
 

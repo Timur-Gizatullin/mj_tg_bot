@@ -16,7 +16,7 @@ from main.handlers.utils import (
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import DiscordQueue, User  # noqa: E402
+from main.models import Prompt, User  # noqa: E402
 
 callback_router = Router()
 
@@ -29,7 +29,7 @@ async def callbacks_variations(callback: types.CallbackQuery):
     print("callbacks.py")
     print(callback.message)
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "V1":
@@ -57,7 +57,7 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     action = callback.data
     message_hash = callback.message.document.file_name.split("_")[0]
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "U1":
@@ -84,7 +84,7 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
 async def callback_reset(callback: types.CallbackQuery):
     message_hash = callback.message.document.file_name.split("_")[0]
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     await queue_handler.add_task(
@@ -99,7 +99,7 @@ async def callback_vary(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_hash = callback.message.document.file_name.split("_")[0]
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "strong":
@@ -123,7 +123,7 @@ async def callback_zoom(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_hash = callback.message.document.file_name.split("_")[0]
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     if action == "2":
@@ -146,7 +146,7 @@ async def callback_pan(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_hash = callback.message.document.file_name.split("_")[0]
 
-    queue: DiscordQueue = await DiscordQueue.objects.get_queue_by_message_hash(message_hash=message_hash)
+    queue: Prompt = await Prompt.objects.get_queue_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
     await queue_handler.add_task(

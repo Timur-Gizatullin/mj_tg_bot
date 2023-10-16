@@ -14,6 +14,8 @@ from pathlib import Path
 
 from decouple import config
 
+from t_bot.caches import REDIS_URL
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,8 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "telegram_django_bot",
     "main",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -73,6 +75,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "t_bot.wsgi.application"
 
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -141,3 +144,7 @@ CHANNEL_ID = config("CHANNEL_ID")
 DISCORD_USER_TOKEN = config("DISCORD_USER_TOKEN")
 GUILD_ID = config("GUILD_ID")
 TRIGGER_URL = "https://discord.com/api/v9/interactions"
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_TIMEZONE = TIME_ZONE

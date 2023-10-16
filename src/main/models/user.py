@@ -2,6 +2,7 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import UserManager as AbstractUserManager
 from django.db import models
+from django.db.models import QuerySet
 
 from main.enums import UserRoleEnum
 
@@ -27,6 +28,25 @@ class UserManager(AbstractUserManager):
         user.save()
 
         return user
+
+    def get_users_to_send_message(
+        self,
+        role: int | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        pay_date: int | None = None,
+        gen_date: int | None = None,
+    ):
+        q_set: QuerySet = self
+        q_set = q_set.filter(role=role) if role else q_set
+        q_set = q_set.filter(pay__date__lte=pay_date) if pay_date else q_set
+        q_set = q_set.filter(prompt__date__lte=gen_date) if gen_date else q_set
+        q_set = q_set.all()
+        q_set = q_set[offset:] if offset else q_set
+        q_set = q_set[:limit] if limit else q_set
+
+        return q_set
+
 
 
 class User(AbstractUser):
