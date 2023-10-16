@@ -5,16 +5,16 @@ from tempfile import NamedTemporaryFile
 import discord
 import django
 import requests
+from decouple import config
 from loguru import logger
-
-from main.handlers.queue import send_action
-from main.keyboards import get_keyboard
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
 from main.models import DiscordQueue, User  # noqa: E402
 from t_bot.settings import TELEGRAM_TOKEN  # noqa: E402
+from main.handlers.queue import send_action
+from main.keyboards import get_keyboard
 
 
 class DiscordMiddleWare(discord.Client):
@@ -78,4 +78,4 @@ if __name__ == "__main__":
     intents = discord.Intents.default()
     intents.message_content = True
     client = DiscordMiddleWare(intents=intents)
-    client.run("MTE2MDU0NTQ1OTA2NTA3Mzc1NQ.GVi1pf.yl5bG37g4T2otjiHhTiCYctWGO-3NL7YmlVBzw")
+    client.run(config("DISCORD_BOT_TOKEN"))

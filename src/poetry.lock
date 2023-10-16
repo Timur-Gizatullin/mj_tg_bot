@@ -1173,6 +1173,17 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "python-decouple"
+version = "3.8"
+description = "Strict separation of settings from code."
+optional = false
+python-versions = "*"
+files = [
+    {file = "python-decouple-3.8.tar.gz", hash = "sha256:ba6e2657d4f376ecc46f77a3a615e058d93ba5e465c01bbe57289bfb7cce680f"},
+    {file = "python_decouple-3.8-py3-none-any.whl", hash = "sha256:d0d45340815b25f4de59c974b855bb38d03151d81b037d9e3f463b0c9f8cbd66"},
+]
+
+[[package]]
 name = "python-telegram-bot"
 version = "20.6"
 description = "We have made you a wrapper you can't refuse"
@@ -1445,4 +1456,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "71db8528dc780052b75039727e06aca734f8318b6ca0de460688fa0704bb4430"
+content-hash = "f7a8e5198c1bd9940f1af333a152b5d590a34f14533387869e0dcc20f02a7949"

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-!xkq0-bc6k=zgzdh(_sd%p#j)wjj7o=b#@nw!h+)0#9t%$73xy"
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -132,10 +133,10 @@ AUTH_USER_MODEL = "main.User"
 
 TELEGRAM_ROOT_UTRLCONF = "t_bot.utrls"
 
-TELEGRAM_TOKEN = "6169422603:AAGyfK65h8pze-4aUhNidzbSNr7Sut9aByA"
-TELEGRAM_LOG = "/web/logs/bot.log"
+TELEGRAM_TOKEN = config("TELEGRAM_TOKEN")
+TELEGRAM_LOG = config("TELEGRAM_LOG")
 
-CHANNEL_ID = "1160854172049080415"
-DISCORD_USER_TOKEN = "MTE2MDg1MzUxNTMzODUxNDQ2Ng.GPAOXT.YIDv2vEydD56fKpJCFAnE88Ffx0x3L7sck1gSw"
-GUILD_ID = "1160854171344445510"
+CHANNEL_ID = config("CHANNEL_ID")
+DISCORD_USER_TOKEN = config("DISCORD_USER_TOKEN")
+GUILD_ID = config("GUILD_ID")
 TRIGGER_URL = "https://discord.com/api/v9/interactions"

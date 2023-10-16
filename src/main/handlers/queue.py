@@ -39,7 +39,7 @@ async def send_action():
     await queue_handler.release_and_remove_first_action()
 
 
-@send_action.before_loop()
+@send_action.before_loop
 async def set_unbanned_users():
     queue_handler.unbanned_users = await MjUser.objects.get_mj_users()
 
