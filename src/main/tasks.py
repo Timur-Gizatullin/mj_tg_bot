@@ -14,12 +14,8 @@ def send_message_to_users(
     limit: int | None = None,
     offset: int | None = None,
     pay_date: int | None = None,
-    gen_date: int | None = None
+    gen_date: int | None = None,
 ):
     users = User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date)
     for user in users:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={user.chat_id}&text={message}"
-        )
-
-
+        requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={user.chat_id}&text={message}")

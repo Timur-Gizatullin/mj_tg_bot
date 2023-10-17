@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from main.models import BanWord, Prompt, Referral, TelegramAnswer, User, MjUser, Pay
+from main.models import BanWord, MjUser, Pay, Prompt, Referral, TelegramAnswer, User
 
 admin.site.register(User)
 admin.site.register(BanWord)

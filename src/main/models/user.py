@@ -48,7 +48,6 @@ class UserManager(AbstractUserManager):
         return q_set
 
 
-
 class User(AbstractUser):
     telegram_username: str = models.CharField(unique=True)
     chat_id: str = models.IntegerField(unique=True, null=True)

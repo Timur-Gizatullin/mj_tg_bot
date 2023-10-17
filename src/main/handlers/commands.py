@@ -1,5 +1,5 @@
 import requests
-from aiogram import Dispatcher, types, Bot
+from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -124,7 +124,7 @@ async def buy_handler(message: types.Message):
         provider_token="401643678:TEST:1c094487-51f6-419a-88f3-09c5e40a6345",
         currency="rub",
         prices=prices,
-        payload="t_pay"
+        payload="t_pay",
     )
 
 

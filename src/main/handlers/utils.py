@@ -2,7 +2,7 @@ from typing import Any
 
 import requests
 
-from main.models import Prompt, MjUser, User
+from main.models import MjUser, Prompt, User
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
