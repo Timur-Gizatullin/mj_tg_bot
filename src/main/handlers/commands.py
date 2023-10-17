@@ -1,11 +1,14 @@
 import requests
-from aiogram import Dispatcher
+from aiogram import Dispatcher, types, Bot
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, PreCheckoutQuery
+from decouple import config
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
+from main.handlers.prices import prices
 from main.handlers.queue import queue_handler
 from main.handlers.utils import (
     INTERACTION_URL,
@@ -14,8 +17,10 @@ from main.handlers.utils import (
 )
 from main.models import BanWord, Prompt, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
+from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
+bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
 
 
 @dp.message(CommandStart(deep_link=True))
@@ -108,3 +113,24 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     await queue_handler.add_task(imagine(), user_role=telegram_user.role)
 
     await message.answer("Запрос добавлен в очередь")
+
+
+@dp.message(Command("buy"))
+async def buy_handler(message: types.Message):
+    await bot.send_invoice(
+        chat_id=message.chat.id,
+        title="Подписка",
+        description="Подписка на gpt и mid jpurney",
+        provider_token="401643678:TEST:1c094487-51f6-419a-88f3-09c5e40a6345",
+        currency="rub",
+        prices=prices,
+        payload="t_pay"
+    )
+
+
+async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+
+async def successful_payment(message: Message):
+    await message.answer("спасибо за покупку!")
