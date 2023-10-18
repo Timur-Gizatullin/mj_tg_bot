@@ -28,8 +28,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="user",
             name="role",
-            field=models.IntegerField(
-                choices=[("ADMIN", 1), ("PREMIUM", 2), ("BASE", 3)], default=main.enums.UserRoleEnum["BASE"]
+            field=models.CharField(
+                choices=[("ADMIN", "ADMIN"), ("PREMIUM", "PREMIUM"), ("BASE", "BASE")], default=main.enums.UserRoleEnum["BASE"]
             ),
         ),
     ]

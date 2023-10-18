@@ -7,19 +7,13 @@ class BaseStrEnum(str, Enum):
         return [(key.name, key.value) for key in cls]
 
 
-class BaseIntEnum(int, Enum):
-    @classmethod
-    def get_choices(cls) -> list[tuple[str, int]]:
-        return [(key.name, key.value) for key in cls]
-
-
 class AnswerTypeEnum(BaseStrEnum):
     START = "START"
     HELP = "HELP"
     CENSOR = "CENSOR"
 
 
-class UserRoleEnum(BaseIntEnum):
-    ADMIN = 1
-    PREMIUM = 2
-    BASE = 3
+class UserRoleEnum(BaseStrEnum):
+    ADMIN = "ADMIN"
+    PREMIUM = "PREMIUM"
+    BASE = "BASE"

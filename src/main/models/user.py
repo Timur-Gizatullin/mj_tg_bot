@@ -1,4 +1,5 @@
 from asgiref.sync import sync_to_async
+from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import UserManager as AbstractUserManager
 from django.db import models
@@ -30,12 +31,12 @@ class UserManager(AbstractUserManager):
         return user
 
     def get_users_to_send_message(
-        self,
-        role: int | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        pay_date: int | None = None,
-        gen_date: int | None = None,
+            self,
+            role: int | None = None,
+            limit: int | None = None,
+            offset: int | None = None,
+            pay_date: int | None = None,
+            gen_date: int | None = None,
     ):
         q_set: QuerySet = self
         q_set = q_set.filter(role=role) if role else q_set
@@ -52,10 +53,33 @@ class User(AbstractUser):
     telegram_username: str = models.CharField(unique=True)
     chat_id: str = models.IntegerField(unique=True, null=True)
     generations_count: int = models.IntegerField(null=False, default=10)
-    role = models.IntegerField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
+    role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
 
     objects = UserManager()
 
     def __str__(self):
         name = self.email if self.email else self.telegram_username
         return name
+
+
+class SiteFilter(admin.SimpleListFilter):
+    title = 'generations count'
+    parameter_name = 'generations_count'
+    field_name = 'generations__count'
+
+    def lookups(self, request, model_admin):
+        queryset = model_admin.get_queryset(request)
+        users = User.objects.all()
+        for user in users:
+            yield (user.generations_count, user.generations_count)
+
+    def queryset(self, request, queryset):
+        generations_count = self.value()
+        print(generations_count)
+        if not generations_count:
+            return queryset
+        return queryset.filter(generations_count__lte=generations_count)
+
+
+class UserAudit(admin.ModelAdmin):
+    list_filter = ("role", SiteFilter)
