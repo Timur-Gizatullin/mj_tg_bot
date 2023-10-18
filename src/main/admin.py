@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from main.models import BanWord, MjUser, Pay, Prompt, Referral, TelegramAnswer, User
-
 from main.models.user import UserAudit
 
 admin.site.register(User, UserAudit)

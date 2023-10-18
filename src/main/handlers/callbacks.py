@@ -13,7 +13,7 @@ from main.handlers.utils.interactions import (
     send_zoom_trigger,
 )
 from main.handlers.utils.wallet import get_pay_link
-from main.keyboards.pay import get_gen_count, get_keyboard_from_buttons
+from main.keyboards.pay import get_gen_count, get_inline_keyboard_from_buttons
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -171,9 +171,12 @@ async def callback_mj_pay(callback: types.CallbackQuery):
         return
 
     pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
-    key_board = get_keyboard_from_buttons((pay_button,))
+    key_board = get_inline_keyboard_from_buttons((pay_button,))
 
     gen_count = get_gen_count(amount=amount)
 
-    await callback.message.answer(f"Get {gen_count} prompts for {amount}$\n<b>Enjoy!</b>", reply_markup=key_board,)
+    await callback.message.answer(
+        f"Get {gen_count} prompts for {amount}$\n<b>Enjoy!</b>",
+        reply_markup=key_board,
+    )
     await callback.answer()

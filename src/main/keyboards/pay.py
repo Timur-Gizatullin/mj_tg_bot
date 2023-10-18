@@ -9,7 +9,8 @@ mj_pay_keyboard_options = [
     types.InlineKeyboardButton(text="110 генераций", callback_data="mjpay_10"),
 ]
 
-def get_keyboard_from_buttons(buttons):
+
+def get_inline_keyboard_from_buttons(buttons):
     builder = InlineKeyboardBuilder()
     for button in buttons:
         builder.row(button)
@@ -24,6 +25,7 @@ async def get_pay_keyboard(service: str) -> InlineKeyboardMarkup:
             builder.row(mj_button)
 
     return builder.as_markup()
+
 
 def get_gen_count(amount: str):
     if amount == "1.00":

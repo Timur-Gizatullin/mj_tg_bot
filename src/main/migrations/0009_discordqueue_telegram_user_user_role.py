@@ -29,7 +29,8 @@ class Migration(migrations.Migration):
             model_name="user",
             name="role",
             field=models.CharField(
-                choices=[("ADMIN", "ADMIN"), ("PREMIUM", "PREMIUM"), ("BASE", "BASE")], default=main.enums.UserRoleEnum["BASE"]
+                choices=[("ADMIN", "ADMIN"), ("PREMIUM", "PREMIUM"), ("BASE", "BASE")],
+                default=main.enums.UserRoleEnum["BASE"],
             ),
         ),
     ]

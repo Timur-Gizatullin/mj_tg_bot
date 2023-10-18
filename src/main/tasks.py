@@ -1,7 +1,6 @@
 import requests
 
 from main.models import User
-from run_bot import bot
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 

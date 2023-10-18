@@ -1,24 +1,12 @@
 from typing import Any
 
 import requests
+from decouple import config
 
-from main.models import MjUser, Prompt, User
+from main.models import Prompt, User
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
-unbanned_discord_users: list[MjUser] = MjUser.objects.filter(is_banned=False).all()
-unloaded_discord_users: list[MjUser]  # TODO remove it to redis
-
-
-async def get_loaded_discord_user():
-    if len(unbanned_discord_users) != 0:
-        discord_user = unbanned_discord_users.pop(0)
-        unloaded_discord_users.append(discord_user)
-        return discord_user.token
-    else:
-        unbanned_discord_users.extend(unloaded_discord_users)
-        unloaded_discord_users.clear()
-        return unbanned_discord_users.pop(0).token
 
 
 def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, Any]:
@@ -42,7 +30,7 @@ async def send_variation_trigger(variation_index: str, queue: Prompt, user: User
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::variation::{variation_index}::{queue.message_hash}"}, **kwargs
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
@@ -57,7 +45,7 @@ async def send_upsample_trigger(upsample_index: str, queue: Prompt, user: User) 
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample::{upsample_index}::{queue.message_hash}"}, **kwargs
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
@@ -72,7 +60,7 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::reroll::0::{message_hash}::SOLO"}, **kwargs
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
@@ -87,7 +75,7 @@ async def send_vary_trigger(vary_type: str, queue: Prompt, user: User) -> int:
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::{vary_type}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
@@ -104,7 +92,7 @@ async def send_zoom_trigger(zoomout: str, queue: Prompt, user: User) -> int:
         {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(zoomout)*50}::1::{queue.message_hash}::SOLO"},
         **kwargs,
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
@@ -119,7 +107,7 @@ async def send_pan_trigger(direction: str, queue: Prompt, user: User) -> int:
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::pan_{direction}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
-    header = {"authorization": await get_loaded_discord_user()}
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 

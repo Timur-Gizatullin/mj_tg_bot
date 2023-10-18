@@ -11,8 +11,8 @@ from loguru import logger
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.handlers.queue import send_action
-from main.keyboards import get_keyboard
+from main.handlers.queue import send_action  # noqa: E402
+from main.keyboards.interactions import get_keyboard  # noqa: E402
 from main.models import Prompt, User  # noqa: E402
 from t_bot.settings import TELEGRAM_TOKEN  # noqa: E402
 

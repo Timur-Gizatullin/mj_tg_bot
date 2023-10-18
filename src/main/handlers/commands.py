@@ -3,16 +3,12 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, PreCheckoutQuery
+from aiogram.types import Message
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
-from main.handlers.prices import prices
 from main.handlers.queue import queue_handler
-from main.handlers.utils.interactions import (
-    INTERACTION_URL,
-    _trigger_payload,
-)
+from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Prompt, Referral, TelegramAnswer, User
 from main.utils import is_has_censor

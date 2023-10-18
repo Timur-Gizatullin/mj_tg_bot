@@ -4,8 +4,6 @@ import os
 import sys
 
 import django
-from aiogram import Bot
-from aiogram.enums import ParseMode
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()

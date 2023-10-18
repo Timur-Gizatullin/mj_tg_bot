@@ -31,12 +31,12 @@ class UserManager(AbstractUserManager):
         return user
 
     def get_users_to_send_message(
-            self,
-            role: int | None = None,
-            limit: int | None = None,
-            offset: int | None = None,
-            pay_date: int | None = None,
-            gen_date: int | None = None,
+        self,
+        role: int | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        pay_date: int | None = None,
+        gen_date: int | None = None,
     ):
         q_set: QuerySet = self
         q_set = q_set.filter(role=role) if role else q_set
@@ -63,12 +63,11 @@ class User(AbstractUser):
 
 
 class SiteFilter(admin.SimpleListFilter):
-    title = 'generations count'
-    parameter_name = 'generations_count'
-    field_name = 'generations__count'
+    title = "generations count"
+    parameter_name = "generations_count"
+    field_name = "generations__count"
 
     def lookups(self, request, model_admin):
-        queryset = model_admin.get_queryset(request)
         users = User.objects.all()
         for user in users:
             yield (user.generations_count, user.generations_count)
