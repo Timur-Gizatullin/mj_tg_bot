@@ -17,7 +17,7 @@ class ReferralManager(models.Manager):
 
     @sync_to_async()
     def get_referral(self, referral_key: int) -> "Referral":
-        return self.filter(key=referral_key).first()
+        return self.filter(key=referral_key, is_active=True).first()
 
     @sync_to_async()
     def delete_referral_and_update_referrer_generations_count(self, referral_key: int) -> None:
@@ -26,7 +26,8 @@ class ReferralManager(models.Manager):
         referral.referrer.generations_count += 2
         referral.referrer.save()
 
-        referral.delete()
+        referral.is_active = False
+        referral.save()
 
 
 class Referral(models.Model):
@@ -37,6 +38,7 @@ class Referral(models.Model):
         related_name="referrals",
         verbose_name="referrer",
     )
+    is_active = models.BooleanField(default=True)
 
     objects = ReferralManager()
 
