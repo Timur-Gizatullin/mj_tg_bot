@@ -4,7 +4,7 @@ import django
 from aiogram import Router, types
 
 from main.handlers.queue import queue_handler
-from main.handlers.utils import (
+from main.handlers.utils.interactions import (
     send_pan_trigger,
     send_reset_trigger,
     send_upsample_trigger,
@@ -12,6 +12,8 @@ from main.handlers.utils import (
     send_vary_trigger,
     send_zoom_trigger,
 )
+from main.handlers.utils.wallet import get_pay_link
+from main.keyboards.pay import get_gen_count, get_keyboard_from_buttons
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -153,4 +155,25 @@ async def callback_pan(callback: types.CallbackQuery):
         send_pan_trigger(queue=queue, direction=action, user=telegram_user), telegram_user.role
     )
 
+    await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("mjpay"))
+async def callback_mj_pay(callback: types.CallbackQuery):
+    amount = f"{callback.data.split('_')[1]}.00"
+    desc = "Get descriptions from mid journey on your telegram account"
+
+    pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
+
+    if not pay_link:
+        await callback.message.answer("Что-то пошло не так :(")
+        await callback.answer()
+        return
+
+    pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
+    key_board = get_keyboard_from_buttons((pay_button,))
+
+    gen_count = get_gen_count(amount=amount)
+
+    await callback.message.answer(f"Get {gen_count} prompts for {amount}$\n<b>Enjoy!</b>", reply_markup=key_board,)
     await callback.answer()
