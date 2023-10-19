@@ -4,10 +4,10 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from decouple import config
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
-from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Prompt, Referral, TelegramAnswer, User
@@ -78,8 +78,6 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     await state.clear()
     prompt = command.args
 
-    telegram_user: User = await User.objects.get_user_by_username(username=message.from_user.username)
-
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
@@ -87,27 +85,22 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         await message.answer(censor_message_answer)
         return
 
-    async def imagine():
-        payload = _trigger_payload(
-            2,
-            {
-                "version": "1118961510123847772",
-                "id": "938956540159881230",
-                "name": "imagine",
-                "type": 1,
-                "options": [{"type": 3, "name": "prompt", "value": prompt}],
-                "attachments": [],
-            },
-        )
-        header = {"authorization": "MTE2MDg1MzUxNTMzODUxNDQ2Ng.GPAOXT.YIDv2vEydD56fKpJCFAnE88Ffx0x3L7sck1gSw"}
+    payload = _trigger_payload(
+        2,
+        {
+            "version": "1118961510123847772",
+            "id": "938956540159881230",
+            "name": "imagine",
+            "type": 1,
+            "options": [{"type": 3, "name": "prompt", "value": f"#{message.chat.id}# {prompt}"}],
+            "attachments": [],
+        },
+    )
+    header = {"authorization": config("DISCORD_USER_TOKEN")}
 
-        await Prompt.objects.create_queue(telegram_chat_id=message.chat.id, prompt=prompt, telegram_user=telegram_user)
+    requests.post(INTERACTION_URL, json=payload, headers=header)
 
-        requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    await queue_handler.add_task(imagine(), user_role=telegram_user.role)
-
-    await message.answer("Запрос добавлен в очередь")
+    await message.answer("Запрос отправлен")
 
 
 @dp.message(Command("mj_pay"))
