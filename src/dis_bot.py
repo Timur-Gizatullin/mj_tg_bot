@@ -3,9 +3,9 @@ import os
 import discord
 import django
 import requests
-from discord.message import Message
 from aiogram.types import BufferedInputFile
 from decouple import config
+from discord.message import Message
 from loguru import logger
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -46,7 +46,11 @@ class DiscordMiddleWare(discord.Client):
         file_url = message.attachments[0].url
         raw_image = requests.get(file_url).content
         logger.warning(message.reference.message_id)
-        parent_prompt = await Prompt.objects.get_message_by_discord_message_id(message_id=message.reference.message_id) if message.reference else None
+        parent_prompt = (
+            await Prompt.objects.get_message_by_discord_message_id(message_id=message.reference.message_id)
+            if message.reference
+            else None
+        )
         logger.warning(parent_prompt)
         keyboard = await get_keyboard(prompt=message.content, caption=parent_prompt.caption)
 
@@ -56,7 +60,7 @@ class DiscordMiddleWare(discord.Client):
             telegram_user=telegram_user,
             discord_message_id=message.id,
             message_hash=message_hash,
-            caption=message.content
+            caption=message.content,
         )
 
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")

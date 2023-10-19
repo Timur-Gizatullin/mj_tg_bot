@@ -10,7 +10,7 @@ from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
 from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload
 from main.keyboards.pay import get_pay_keyboard
-from main.models import BanWord, Prompt, Referral, TelegramAnswer, User
+from main.models import BanWord, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
 from t_bot.settings import TELEGRAM_TOKEN
 
