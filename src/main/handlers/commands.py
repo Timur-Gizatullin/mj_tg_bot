@@ -10,8 +10,8 @@ from loguru import logger
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
-from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload
-from main.handlers.utils.mj_user import get_sender_token
+from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload, mj_user_token_queue
+from main.handlers.utils.mj_user import MjUserTokenQueue
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
@@ -102,7 +102,8 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
             "attachments": [],
         },
     )
-    header = {"authorization": get_sender_token()}
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token}
 
     requests.post(INTERACTION_URL, json=payload, headers=header)
 

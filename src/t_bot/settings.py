@@ -141,7 +141,7 @@ TELEGRAM_TOKEN = config("TELEGRAM_TOKEN")
 TELEGRAM_LOG = config("TELEGRAM_LOG")
 
 CHANNEL_ID = config("CHANNEL_ID")
-DISCORD_USER_TOKEN = config("DISCORD_USER_TOKEN")
+DISCORD_USER_TOKENS = config("DISCORD_USER_TOKENS")
 GUILD_ID = config("GUILD_ID")
 TRIGGER_URL = "https://discord.com/api/v9/interactions"
 
