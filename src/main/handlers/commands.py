@@ -4,11 +4,11 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from decouple import config
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
 from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload
+from main.handlers.utils.mj_user import get_sender_token
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Referral, TelegramAnswer, User
 from main.utils import is_has_censor
@@ -96,7 +96,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
             "attachments": [],
         },
     )
-    header = {"authorization": config("DISCORD_USER_TOKEN")}
+    header = {"authorization": get_sender_token()}
 
     requests.post(INTERACTION_URL, json=payload, headers=header)
 
