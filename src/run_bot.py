@@ -13,8 +13,6 @@ from main.handlers.commands import bot, dp  # noqa: E402
 
 
 async def main() -> None:
-    # Initialize Bot instance with a default parse mode which will be passed to all API calls
-    # And the run events dispatching
     dp.include_router(callback_router)
     await dp.start_polling(bot)
 

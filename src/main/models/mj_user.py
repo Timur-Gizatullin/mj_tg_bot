@@ -1,9 +1,7 @@
-from asgiref.sync import sync_to_async
 from django.db import models
 
 
 class MjUserManager(models.Manager):
-    @sync_to_async()
     def get_mj_users(self) -> list["MjUser"]:
         return self.filter(is_banned=False).all()
 

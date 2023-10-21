@@ -1,9 +1,12 @@
+import openai
 import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from decouple import config
+from loguru import logger
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
@@ -16,6 +19,9 @@ from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
+
+openai.api_key = config("OPEN_AI_API_KEY")
+gpt = openai.Completion
 
 
 @dp.message(CommandStart(deep_link=True))
@@ -106,3 +112,25 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
 @dp.message(Command("mj_pay"))
 async def buy_handler(message: types.Message):
     await message.answer("Выберите один из вариантов", reply_markup=await get_pay_keyboard(service="mj"))
+
+
+@dp.message(Command("gpt"))
+async def gpt_handler(message: types.Message, state, command: CommandObject):
+    await state.clear()
+    prompt = command.args
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message.text and await is_has_censor(prompt, ban_words):
+        await message.answer(censor_message_answer)
+        return
+
+    try:
+        gpt_answer = await gpt.acreate(model=config("MODEL_ENGINE"), prompt=prompt, max_tokens=config("MAX_TOKENS"))
+    except Exception as e:
+        logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
+        await message.answer("ChatGPT временно не доступен, попробуйте позже")
+        return
+
+    await message.answer(gpt_answer.choices[0].text)
