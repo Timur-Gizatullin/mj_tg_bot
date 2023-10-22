@@ -10,7 +10,11 @@ from loguru import logger
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum
-from main.handlers.utils.interactions import INTERACTION_URL, _trigger_payload, mj_user_token_queue
+from main.handlers.utils.interactions import (
+    INTERACTION_URL,
+    _trigger_payload,
+    mj_user_token_queue,
+)
 from main.handlers.utils.mj_user import MjUserTokenQueue
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Referral, TelegramAnswer, User

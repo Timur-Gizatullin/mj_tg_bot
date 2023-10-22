@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from loguru import logger
 
 variations_buttons = (
     types.InlineKeyboardButton(text="V1", callback_data="V1"),
@@ -39,30 +40,33 @@ zoom_buttons = (
 )
 
 
-async def get_keyboard(prompt: str, caption: str | None) -> InlineKeyboardMarkup:
+async def get_keyboard(buttons: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    arrows = []
 
-    if prompt.find("Image") != -1 and caption:
-        builder.row(*zoom_buttons)
-        if caption.find("Pan Right") != -1 or caption.find("Pan Left") != -1:
-            builder.row(pan_left_button, pan_right_button, left_right_square_button)
-        if caption.find("Pan Up") != -1 or caption.find("Pan Down") != -1:
-            builder.row(pan_left_button, pan_right_button, up_down_square_button)
-
-        return builder.as_markup()
-
-    if prompt.find("Image") != -1:
-        builder.row(*vary_buttons)
-        builder.row(*zoom_buttons)
-        builder.row(pan_left_button, pan_right_button, pan_up_button, pan_down_button)
-
-        return builder.as_markup()
-
-    if prompt.find("Pan") != -1:
+    if "U1" in buttons and "U2" in buttons and "U3" in buttons and "U4" in buttons:
         builder.row(*upscale_buttons, reset_button)
-        return builder.as_markup()
+    if "V1" in buttons and "V2" in buttons and "V3" in buttons and "V4" in buttons:
+        builder.row(*variations_buttons)
+    if "Vary" in buttons:
+        builder.row(*vary_buttons)
+    if "Zoom" in buttons:
+        builder.row(*zoom_buttons)
+    logger.warning(buttons)
+    if "⬅️" in buttons:
+        arrows.append(pan_left_button)
+    if "➡️" in buttons:
+        arrows.append(pan_right_button)
+    if "⬆️" in buttons:
+        arrows.append(pan_up_button)
+    if "⬇️" in buttons:
+        arrows.append(pan_down_button)
+    if "↔️" in buttons:
+        arrows.append(up_down_square_button)
+    if "↕️" in buttons:
+        arrows.append(left_right_square_button)
 
-    builder.row(*upscale_buttons, reset_button)
-    builder.row(*variations_buttons)
+    if arrows:
+        builder.row(*arrows)
 
     return builder.as_markup()

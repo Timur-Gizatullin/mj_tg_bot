@@ -45,14 +45,16 @@ class DiscordMiddleWare(discord.Client):
 
         file_url = message.attachments[0].url
         raw_image = requests.get(file_url).content
-        logger.warning(message.reference.message_id)
-        parent_prompt = (
-            await Prompt.objects.get_message_by_discord_message_id(message_id=message.reference.message_id)
-            if message.reference
-            else None
-        )
-        logger.warning(parent_prompt)
-        keyboard = await get_keyboard(prompt=message.content, caption=parent_prompt.caption)
+
+        buttons: list[str] = list()
+        for component in message.components:
+            for child in component.children:
+                if child.label:
+                    buttons.append(child.label.split(" ")[0])
+                if child.emoji:
+                    buttons.append(child.emoji.name)
+
+        keyboard = await get_keyboard(buttons=buttons)
 
         await Prompt.objects.acreate(
             prompt=prompt,

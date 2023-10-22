@@ -18,4 +18,3 @@ class MjUserTokenQueue:
             self.current_sender_index += 1
             self.interaction_left_count = 20
             return self.db_senders[self.current_sender_index]
-
