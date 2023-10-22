@@ -1,37 +1,21 @@
-import asyncio
-import random
-from asyncio import Task
-from typing import Coroutine
+from typing import Callable
 
-from discord.ext import tasks
-from loguru import logger
+from redis import Redis
+from rq import Queue
 
 from main.enums import UserRoleEnum
+from t_bot.caches import REDIS_URL
 
 
 class QueueHandler:
-    discord_queue: list[Task] = []
-    random_delay = random.randint(1, 10)
+    base_queue = Queue(name="base", connection=Redis(REDIS_URL))
+    premium_queue = Queue(name="base", connection=Redis(REDIS_URL))
 
-    async def add_task(self, action: Coroutine, user_role: UserRoleEnum) -> None:
-        new_task = asyncio.create_task(action)
+    async def add_task(self, action: Callable, user_role: UserRoleEnum, **kwargs) -> None:
         if user_role == UserRoleEnum.BASE:
-            self.discord_queue.append(new_task)
+            self.base_queue.enqueue(action, **kwargs)
         else:
-            self.discord_queue.insert(0, new_task)
-
-    async def release_and_remove_first_action(self) -> None:
-        tasks_left = len(self.discord_queue)
-        logger.info(f"В очереди {tasks_left} задач")
-        if tasks_left != 0:
-            current_action = self.discord_queue.pop(0)
-
-            await current_action
+            self.premium_queue.enqueue(action, **kwargs)
 
 
 queue_handler = QueueHandler()
-
-
-@tasks.loop(seconds=5.0)
-async def send_action():
-    await queue_handler.release_and_remove_first_action()

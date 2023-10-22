@@ -15,7 +15,6 @@ from main.handlers.utils.interactions import (
     _trigger_payload,
     mj_user_token_queue,
 )
-from main.handlers.utils.mj_user import MjUserTokenQueue
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Referral, TelegramAnswer, User
 from main.utils import is_has_censor

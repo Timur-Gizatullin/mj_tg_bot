@@ -12,7 +12,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
 from main.handlers.commands import bot  # noqa: E402
-from main.handlers.queue import send_action  # noqa: E402
 from main.keyboards.interactions import get_keyboard  # noqa: E402
 from main.models import Prompt, User  # noqa: E402
 
@@ -20,10 +19,6 @@ from main.models import Prompt, User  # noqa: E402
 class DiscordMiddleWare(discord.Client):
     async def on_ready(self):
         logger.info("Logged on as", self.user)
-
-    async def setup_hook(self) -> None:
-        logger.info("Setup send hook")
-        send_action.start()
 
     async def on_message(self, message: Message):
         if message.author == self.user:
