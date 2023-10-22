@@ -95,7 +95,7 @@ async def send_zoom_trigger(zoomout: str, queue: Prompt) -> int:
     }
     payload = _trigger_payload(
         3,
-        {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(zoomout)*50}::1::{queue.message_hash}::SOLO"},
+        {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(float(zoomout)*50)}::1::{queue.message_hash}::SOLO"},
         **kwargs,
     )
     token = await mj_user_token_queue.get_sender_token()

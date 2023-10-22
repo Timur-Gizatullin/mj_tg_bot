@@ -90,7 +90,7 @@ async def callback_vary(callback: types.CallbackQuery):
     elif action == "subtle":
         await queue_handler.add_task(send_vary_trigger(vary_type="low_variation", queue=queue), telegram_user.role)
     elif action == "region":
-        await queue_handler.add_task(send_vary_trigger(vary_type="variation", queue=queue), telegram_user.role)
+        pass #TODO
 
     await callback.answer()
 
@@ -108,7 +108,6 @@ async def callback_zoom(callback: types.CallbackQuery):
     elif action == "1.5":
         await queue_handler.add_task(send_zoom_trigger(queue=queue, zoomout=action), telegram_user.role)
     elif action == "custom":
-        # TODO
         pass
 
     await callback.answer()
