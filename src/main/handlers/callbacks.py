@@ -49,6 +49,19 @@ async def callbacks_variations(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@callback_router.callback_query(lambda c: c.data.startswith("_v5"))
+async def callbacks_upsamples_v5(callback: types.CallbackQuery):
+    action = callback.data
+    message_hash = callback.message.document.file_name.split(".")[0]
+
+    queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
+    telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
+
+    await queue_handler.add_task(
+        send_upsample_trigger, upsample_index="1", queue=queue, version=action, user_role=telegram_user.role
+    )
+
+
 @callback_router.callback_query(lambda c: c.data.startswith("U"))
 async def callbacks_upsamples(callback: types.CallbackQuery):
     action = callback.data

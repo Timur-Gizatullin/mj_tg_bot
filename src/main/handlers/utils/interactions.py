@@ -40,13 +40,14 @@ async def send_variation_trigger(variation_index: str, queue: Prompt) -> int:
     return response.status_code
 
 
-async def send_upsample_trigger(upsample_index: str, queue: Prompt) -> int:
+async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str = "") -> int:
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
     }
+    solo = "::SOLO" if version != "" else ""
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample::{upsample_index}::{queue.message_hash}"}, **kwargs
+        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample{version}::{upsample_index}::{queue.message_hash}{solo}"}, **kwargs
     )
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
