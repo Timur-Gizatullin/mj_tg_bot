@@ -1,3 +1,6 @@
+from translate import Translator
+
+
 async def is_has_censor(message: str, censor_list: list[str]) -> bool:
     message = message.lower()
     message = message.replace(" ", "")
@@ -7,3 +10,5 @@ async def is_has_censor(message: str, censor_list: list[str]) -> bool:
             return True
 
     return False
+
+translator = Translator(from_lang="ru", to_lang="en")

@@ -17,7 +17,7 @@ from main.handlers.utils.interactions import (
 )
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Referral, TelegramAnswer, User
-from main.utils import is_has_censor
+from main.utils import is_has_censor, translator
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -85,7 +85,7 @@ async def create_referral(message: Message, state) -> None:
 @dp.message(Command("imagine"))
 async def imagine_handler(message: Message, state, command: CommandObject) -> None:
     await state.clear()
-    prompt = command.args
+    prompt = translator.translate(command.args)
 
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
