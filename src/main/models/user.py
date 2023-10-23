@@ -61,8 +61,13 @@ class User(AbstractUser):
         name = self.email if self.email else self.telegram_username
         return name
 
+    @sync_to_async()
+    def decrease_generations_count(self):
+        self.generations_count -= 1
+        self.save()
 
-class SiteFilter(admin.SimpleListFilter):
+
+class UserFilter(admin.SimpleListFilter):
     title = "generations count"
     parameter_name = "generations_count"
     field_name = "generations__count"
@@ -81,4 +86,4 @@ class SiteFilter(admin.SimpleListFilter):
 
 
 class UserAudit(admin.ModelAdmin):
-    list_filter = ("role", SiteFilter)
+    list_filter = ("role", UserFilter)

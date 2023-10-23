@@ -36,7 +36,7 @@ class DiscordMiddleWare(discord.Client):
     async def _send_photo_to_telegram(self, message: Message, chat_id: str, prompt: str):
         filename = message.attachments[0].filename
         message_hash = filename.split("_")[-1].split(".")[0]
-        telegram_user = await User.objects.get_user_by_chat_id(chat_id=chat_id)
+        telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=chat_id)
 
         file_url = message.attachments[0].url
         raw_image = requests.get(file_url).content
@@ -62,6 +62,8 @@ class DiscordMiddleWare(discord.Client):
 
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
         await bot.send_document(chat_id=chat_id, document=document, reply_markup=keyboard, caption=prompt)
+
+        await telegram_user.decrease_generations_count()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,63 @@
+version: '3.3'
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn t_bot.wsgi:application --bind=0.0.0.0:8000
+    restart: on-failure
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+  telegram:
+    build:
+      context: .
+    command: python run_bot.py
+    restart: on-failure
+    depends_on:
+      - db
+      - redis
+  discord:
+    build:
+      context: .
+    command: python dis_bot.py
+    restart: on-failure
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgres:15.2
+    restart: on-failure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    expose:
+      - 5432
+    healthcheck:
+      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  redis:
+      image: redis:7.0.9
+      restart: on-failure
+      healthcheck:
+        test: redis-cli ping
+        interval: 30s
+        timeout: 10s
+        retries: 3
+  worker:
+    build:
+      context: .
+    command: [ 'celery', '-A', 't_bot', 'worker', '-l', 'info' ]
+    expose:
+      - 6379
+    depends_on:
+      - redis
+volumes:
+  postgres_data:

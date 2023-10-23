@@ -8,14 +8,16 @@ from t_bot.caches import REDIS_URL
 
 
 class QueueHandler:
-    base_queue = Queue(name="base", connection=Redis(REDIS_URL))
-    premium_queue = Queue(name="base", connection=Redis(REDIS_URL))
+    base_queue = Queue(name="low", connection=Redis())
+    premium_queue = Queue(name="high", connection=Redis())
 
     async def add_task(self, action: Callable, user_role: UserRoleEnum, **kwargs) -> None:
         if user_role == UserRoleEnum.BASE:
-            self.base_queue.enqueue(action, **kwargs)
+            # self.base_queue.enqueue(action, **kwargs)
+            await action(**kwargs)
         else:
-            self.premium_queue.enqueue(action, **kwargs)
+            await action(**kwargs)
+            # self.premium_queue.enqueue(action, **kwargs)
 
 
 queue_handler = QueueHandler()
