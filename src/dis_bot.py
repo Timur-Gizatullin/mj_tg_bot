@@ -3,6 +3,7 @@ import os
 import discord
 import django
 import requests
+from aiogram.enums import ParseMode
 from aiogram.types import BufferedInputFile
 from decouple import config
 from discord.message import Message
@@ -60,8 +61,10 @@ class DiscordMiddleWare(discord.Client):
             caption=message.content,
         )
 
+        caption = f"`{prompt.split('#')[-1]}`"
+
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
-        await bot.send_document(chat_id=chat_id, document=document, reply_markup=keyboard, caption=prompt)
+        await bot.send_document(chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN)
 
         await telegram_user.decrease_generations_count()
 
