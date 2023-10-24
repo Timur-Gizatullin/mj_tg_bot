@@ -138,3 +138,8 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
         return
 
     await message.answer(gpt_answer.choices[0].text)
+
+
+@dp.message()
+async def handle_any(message: Message, state):
+    await help_handler(message, state)
