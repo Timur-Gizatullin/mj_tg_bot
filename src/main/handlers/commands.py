@@ -27,6 +27,13 @@ openai.api_key = config("OPEN_AI_API_KEY")
 gpt = openai.Completion
 
 
+async def is_user_exist(chat_id: str) -> bool:
+    user = await User.objects.get_user_by_chat_id(chat_id=chat_id)
+    if not user:
+        return False
+    return True
+
+
 @dp.message(CommandStart(deep_link=True))
 async def deep_start(message: Message, command: CommandObject, state: FSMContext):
     key = command.args
@@ -65,6 +72,10 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 async def help_handler(message: Message, state) -> None:
     await state.clear()
 
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start") #TODO добавить сообщение в админку
+        return
+
     help_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.HELP)
 
     await message.answer(help_message)
@@ -73,6 +84,10 @@ async def help_handler(message: Message, state) -> None:
 @dp.message(Command("referral"))
 async def create_referral(message: Message, state) -> None:
     await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
 
     referrer = await User.objects.get_user_by_username(username=message.from_user.username)
 
@@ -85,6 +100,11 @@ async def create_referral(message: Message, state) -> None:
 @dp.message(Command("imagine"))
 async def imagine_handler(message: Message, state, command: CommandObject) -> None:
     await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
     prompt = translator.translate(command.args)
 
     ban_words = await BanWord.objects.get_active_ban_words()
@@ -115,12 +135,21 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
 
 @dp.message(Command("mj_pay"))
 async def buy_handler(message: types.Message):
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
     await message.answer("Выберите один из вариантов", reply_markup=await get_pay_keyboard(service="mj"))
 
 
 @dp.message(Command("gpt"))
 async def gpt_handler(message: types.Message, state, command: CommandObject):
     await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
     prompt = command.args
 
     ban_words = await BanWord.objects.get_active_ban_words()
@@ -142,4 +171,8 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
 
 @dp.message()
 async def handle_any(message: Message, state):
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
     await help_handler(message, state)
