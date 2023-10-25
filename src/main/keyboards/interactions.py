@@ -39,13 +39,23 @@ zoom_buttons = (
 
 upscale_buttons = (
     types.InlineKeyboardButton(text="🔼 Upscale (x2)", callback_data="_v5_2x"),
-    types.InlineKeyboardButton(text="⏫ Upscale (x4)", callback_data="_v5_4x")
+    types.InlineKeyboardButton(text="⏫ Upscale (x4)", callback_data="_v5_4x"),
 )
 
 redo_upscale_buttons = (
     types.InlineKeyboardButton(text="🔼 Redo upscale (x2)", callback_data="_v5_2x"),
-    types.InlineKeyboardButton(text="⏫ Redo upscale (x4)", callback_data="_v5_4x")
+    types.InlineKeyboardButton(text="⏫ Redo upscale (x4)", callback_data="_v5_4x"),
 )
+
+describe_buttons = (
+    types.InlineKeyboardButton(text="1️⃣", callback_data="describe_0"),
+    types.InlineKeyboardButton(text="2️⃣", callback_data="describe_1"),
+    types.InlineKeyboardButton(text="3️⃣", callback_data="describe_2"),
+    types.InlineKeyboardButton(text="4️⃣", callback_data="describe_3"),
+)
+
+describe_buttons_all = types.InlineKeyboardButton(text="🎉 Imagine all", callback_data="describe_all")
+
 
 async def get_keyboard(buttons: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -63,6 +73,9 @@ async def get_keyboard(buttons: list[str]) -> InlineKeyboardMarkup:
         builder.row(*redo_upscale_buttons)
     if "Zoom" in buttons:
         builder.row(*zoom_buttons)
+    if "1️⃣" in buttons:
+        builder.row(*describe_buttons, reset_button)
+        builder.row(describe_buttons_all)
     logger.warning(buttons)
     if "⬅️" in buttons:
         arrows.append(pan_left_button)

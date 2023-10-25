@@ -13,11 +13,12 @@ from main.enums import AnswerTypeEnum
 from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
+    imagine_trigger,
     mj_user_token_queue,
 )
 from main.keyboards.pay import get_pay_keyboard
-from main.models import BanWord, Referral, TelegramAnswer, User
-from main.utils import is_has_censor, translator
+from main.models import BanWord, Describe, Referral, TelegramAnswer, User
+from main.utils import is_has_censor, put_file, translator, upload_file
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -73,7 +74,7 @@ async def help_handler(message: Message, state) -> None:
     await state.clear()
 
     if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start") #TODO добавить сообщение в админку
+        await message.answer("Напишите боту /start")  # TODO добавить сообщение в админку
         return
 
     help_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.HELP)
@@ -114,21 +115,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         await message.answer(censor_message_answer)
         return
 
-    payload = _trigger_payload(
-        2,
-        {
-            "version": "1118961510123847772",
-            "id": "938956540159881230",
-            "name": "imagine",
-            "type": 1,
-            "options": [{"type": 3, "name": "prompt", "value": f"#{message.chat.id}# {prompt}"}],
-            "attachments": [],
-        },
-    )
-    token = await mj_user_token_queue.get_sender_token()
-    header = {"authorization": token}
-
-    requests.post(INTERACTION_URL, json=payload, headers=header)
+    await imagine_trigger(message=message, prompt=prompt)
 
     await message.answer("Запрос отправлен")
 
@@ -167,6 +154,55 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
         return
 
     await message.answer(gpt_answer.choices[0].text)
+
+
+@dp.message(Command("describe"))
+async def describe_handler(message: Message, state):
+    await state.clear()
+
+    if not message.photo:
+        await message.answer("Пожалуйста, прикрепите фотографию")
+        return
+
+    file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+    downloaded_file = await bot.download_file(file_path=file.file_path)
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token, "Content-Type": "application/json"}
+
+    attachment = await upload_file(file=file, header=header)
+    if not attachment:
+        await message.answer("Не удалось загрузить файл")
+        return
+
+    if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
+        await message.answer("Не удалось загрузить файл")
+        return
+
+    upload_filename = attachment["upload_filename"]
+
+    payload = _trigger_payload(
+        2,
+        {
+            "version": "1166847114203123797",
+            "id": "1092492867185950852",
+            "name": "describe",
+            "type": 1,
+            "options": [{"type": 11, "name": "image", "value": 0}],
+            "attachments": [
+                {
+                    "id": "0",
+                    "filename": upload_filename.split("/")[-1],
+                    "uploaded_filename": upload_filename,
+                }
+            ],
+        },
+    )
+
+    if not requests.post(INTERACTION_URL, json=payload, headers=header).ok:
+        await message.answer("Проверьте версию")
+
+    new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
+    await new_describe.asave()
 
 
 @dp.message()

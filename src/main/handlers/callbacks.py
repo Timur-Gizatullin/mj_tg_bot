@@ -2,9 +2,12 @@ import os
 
 import django
 from aiogram import Router, types
+from loguru import logger
 
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
+    describe_reset_trigger,
+    imagine_trigger,
     send_pan_trigger,
     send_reset_trigger,
     send_upsample_trigger,
@@ -182,3 +185,20 @@ async def callback_mj_pay(callback: types.CallbackQuery):
         reply_markup=key_board,
     )
     await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("describe"))
+async def callbacks_describe(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
+
+    if callback.data != "reset" and action != "all":
+        prompt = callback.message.caption.split("\n\n")[int(action)]
+        logger.debug(callback.message.caption)
+        logger.debug(prompt)
+
+        await queue_handler.add_task(
+            imagine_trigger, message=callback.message, prompt=prompt, user_role=telegram_user.role
+        )
+    elif callback.data == "reset":
+        await describe_reset_trigger(message_id=telegram_user.chat_id)

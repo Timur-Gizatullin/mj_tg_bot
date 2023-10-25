@@ -14,19 +14,51 @@ django.setup()
 
 from main.handlers.commands import bot  # noqa: E402
 from main.keyboards.interactions import get_keyboard  # noqa: E402
-from main.models import Prompt, User  # noqa: E402
+from main.models import Describe, Prompt, User  # noqa: E402
 
 
 class DiscordMiddleWare(discord.Client):
     async def on_ready(self):
         logger.info("Logged on as", self.user)
 
+    async def on_message_edit(self, message_before: Message, message_after: Message):
+        logger.debug(message_after.embeds)
+
+        if len(message_after.embeds) == 1 and len(message_before.embeds) == 0:
+            logger.debug(message_after.embeds[0].description)
+            logger.debug(message_after.embeds[0].image)
+
+            buttons: list[str] = list()
+            for component in message_after.components:
+                for child in component.children:
+                    if child.label:
+                        buttons.append(child.label.split(" ")[0])
+                    if child.emoji:
+                        buttons.append(child.emoji.name)
+
+            keyboard = await get_keyboard(buttons=buttons)
+
+            image_proxy_url = message_after.embeds[0].image.proxy_url
+            file_name = image_proxy_url.split("/")[-1]
+            describe_object: Describe = await Describe.objects.get_describe_by_file_name(file_name)
+            await bot.send_photo(
+                chat_id=describe_object.chat_id,
+                photo=image_proxy_url,
+                caption=message_after.embeds[0].description,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+
     async def on_message(self, message: Message):
         if message.author == self.user:
             return
 
-        prompt = str(message.content).split("**")[1]
-        chat_id = str(message.content).split("#")[1].split("#")[0]
+        if message.content:
+            prompt = str(message.content).split("**")[1]
+            chat_id = str(message.content).split("#")[1].split("#")[0]
+        else:
+            logger.debug("Message content is empty")
+            return
 
         if len(message.attachments) == 0:
             await bot.send_message(chat_id=chat_id, text=f"Запрос {prompt} обрабатывается")
@@ -61,10 +93,12 @@ class DiscordMiddleWare(discord.Client):
             caption=message.content,
         )
 
-        caption = f"`{prompt.split('#')[-1]}`"
+        caption = f"`{prompt.split('#')[-1]}`" if "#" in prompt else prompt
 
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
-        await bot.send_document(chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN)
+        await bot.send_document(
+            chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
+        )
 
         await telegram_user.decrease_generations_count()
 

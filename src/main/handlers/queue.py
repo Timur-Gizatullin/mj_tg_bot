@@ -4,7 +4,6 @@ from redis import Redis
 from rq import Queue
 
 from main.enums import UserRoleEnum
-from t_bot.caches import REDIS_URL
 
 
 class QueueHandler:

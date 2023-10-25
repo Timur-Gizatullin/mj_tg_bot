@@ -7,6 +7,8 @@ from main.models import Prompt
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
+ATTACHMENTS_URL = "https://discord.com/api/v9/channels/1160854172049080415/attachments"
+MESSAGES_URL = "https://discord.com/api/v9/channels/1160854172049080415/messages"
 
 mj_user_token_queue = MjUserTokenQueue()
 
@@ -47,7 +49,9 @@ async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str
     }
     solo = "::SOLO" if version != "" else ""
     payload = _trigger_payload(
-        3, {"component_type": 2, "custom_id": f"MJ::JOB::upsample{version}::{upsample_index}::{queue.message_hash}{solo}"}, **kwargs
+        3,
+        {"component_type": 2, "custom_id": f"MJ::JOB::upsample{version}::{upsample_index}::{queue.message_hash}{solo}"},
+        **kwargs,
     )
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
@@ -96,7 +100,7 @@ async def send_zoom_trigger(zoomout: str, queue: Prompt) -> int:
     }
     payload = _trigger_payload(
         3,
-        {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(float(zoomout)*50)}::1::{queue.message_hash}::SOLO"},
+        {"component_type": 2, "custom_id": f"MJ::Outpaint::{int(float(zoomout) * 50)}::1::{queue.message_hash}::SOLO"},
         **kwargs,
     )
     token = await mj_user_token_queue.get_sender_token()
@@ -115,6 +119,38 @@ async def send_pan_trigger(direction: str, queue: Prompt) -> int:
     payload = _trigger_payload(
         3, {"component_type": 2, "custom_id": f"MJ::JOB::pan_{direction}::1::{queue.message_hash}::SOLO"}, **kwargs
     )
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token}
+
+    response = requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    return response.status_code
+
+
+async def imagine_trigger(message, prompt):
+    payload = _trigger_payload(
+        2,
+        {
+            "version": "1166847114203123795",
+            "id": "938956540159881230",
+            "name": "imagine",
+            "type": 1,
+            "options": [{"type": 3, "name": "prompt", "value": f"#{message.chat.id}# {prompt}"}],
+            "attachments": [],
+        },
+    )
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token}
+
+    requests.post(INTERACTION_URL, json=payload, headers=header)
+
+
+async def describe_reset_trigger(message_id: str):
+    kwargs = {
+        "message_flags": 0,
+        "message_id": message_id,
+    }
+    payload = _trigger_payload(3, {"component_type": 2, "custom_id": "MJ::Picread::Retry"}, **kwargs)
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
