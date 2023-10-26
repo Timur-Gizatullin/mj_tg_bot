@@ -199,7 +199,9 @@ async def describe_handler(message: Message, state):
     )
 
     if not requests.post(INTERACTION_URL, json=payload, headers=header).ok:
-        await message.answer("Проверьте версию")
+        logger.error("Check out ds version")
+        await message.answer("Что-то пошло не так")
+        return
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
     await new_describe.asave()
