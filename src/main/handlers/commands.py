@@ -108,6 +108,10 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
 
     prompt = translator.translate(command.args)
 
+    if prompt == "":
+        await message.answer("Добавьте описание")
+        return
+
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 

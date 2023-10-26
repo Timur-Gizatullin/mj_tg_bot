@@ -74,8 +74,8 @@ async def get_keyboard(buttons: list[str]) -> InlineKeyboardMarkup:
     if "Zoom" in buttons:
         builder.row(*zoom_buttons)
     if "1️⃣" in buttons:
-        builder.row(*describe_buttons, reset_button)
-        builder.row(describe_buttons_all)
+        builder.row(*describe_buttons)
+        # builder.row(describe_buttons_all)
     logger.warning(buttons)
     if "⬅️" in buttons:
         arrows.append(pan_left_button)
