@@ -13,11 +13,13 @@ from main.enums import AnswerTypeEnum
 from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
+    blend_trigger,
     imagine_trigger,
-    mj_user_token_queue, blend_trigger,
+    mj_user_token_queue,
 )
+from main.keyboards.commands import start_buttons
 from main.keyboards.pay import get_pay_keyboard
-from main.models import BanWord, Describe, Referral, TelegramAnswer, User, Blend
+from main.models import BanWord, Blend, Describe, Referral, TelegramAnswer, User
 from main.utils import (
     BlendStateMachine,
     is_has_censor,
@@ -68,15 +70,12 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     new_user = await User.objects.get_user_by_username(username=message.from_user.username)
 
-    if new_user:
-        await message.answer("Вы уже зарегестрированы в нашей системе")
-        return
-
-    await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
+    if not new_user:
+        await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
 
-    await message.answer(initial_message)
+    await message.answer(initial_message, reply_markup=start_buttons)
 
 
 @dp.message(Command("help"))
@@ -251,7 +250,13 @@ async def blend_image_state_handler(message: Message, state: FSMContext):
     logger.error(message.media_group_id)
 
     if not message.photo:
-        await message.answer(f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` или `перемешать {message.media_group_id}`, когда все фотографии будут загружены", parse_mode=ParseMode.MARKDOWN)
+        await message.answer(
+            (
+                f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` "
+                f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
+            ),
+            parse_mode=ParseMode.MARKDOWN,
+        )
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
@@ -274,9 +279,13 @@ async def blend_image_state_handler(message: Message, state: FSMContext):
     await new_blend.asave()
 
     await message.answer(
-        f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` или `перемешать {message.media_group_id}`, когда все фотографии будут загружены",
-        parse_mode=ParseMode.MARKDOWN)
-    await message.answer(f"фото загружено")
+        (
+            f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` "
+            f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
+        ),
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    await message.answer("фото загружено")
 
 
 @dp.message(BlendStateMachine.blend)
