@@ -14,11 +14,17 @@ from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
     imagine_trigger,
-    mj_user_token_queue,
+    mj_user_token_queue, blend_trigger,
 )
 from main.keyboards.pay import get_pay_keyboard
-from main.models import BanWord, Describe, Referral, TelegramAnswer, User
-from main.utils import is_has_censor, put_file, translator, upload_file
+from main.models import BanWord, Describe, Referral, TelegramAnswer, User, Blend
+from main.utils import (
+    BlendStateMachine,
+    is_has_censor,
+    put_file,
+    translator,
+    upload_file,
+)
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -28,11 +34,9 @@ openai.api_key = config("OPEN_AI_API_KEY")
 gpt = openai.Completion
 
 
-async def is_user_exist(chat_id: str) -> bool:
+async def is_user_exist(chat_id: str) -> User | None:
     user = await User.objects.get_user_by_chat_id(chat_id=chat_id)
-    if not user:
-        return False
-    return True
+    return user
 
 
 @dp.message(CommandStart(deep_link=True))
@@ -61,6 +65,12 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
 @dp.message(CommandStart())
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
+
+    new_user = await User.objects.get_user_by_username(username=message.from_user.username)
+
+    if new_user:
+        await message.answer("Вы уже зарегестрированы в нашей системе")
+        return
 
     await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
 
@@ -211,8 +221,83 @@ async def describe_handler(message: Message, state):
     await new_describe.asave()
 
 
+@dp.message(Command("blend"))
+async def blend_handler(message: Message, state: FSMContext):
+    await state.clear()
+
+    await message.answer("Отправьте отдельным сообщением сгруппированное фото")
+
+    await state.set_state(BlendStateMachine.image)
+
+
+@dp.message(BlendStateMachine.image)
+async def blend_image_state_handler(message: Message, state: FSMContext):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    if message.text and message.text.startswith("отмена"):
+        await message.answer("Отмена прошла успешна")
+        await state.clear()
+        return
+    if message.text and message.text.startswith("перемешать"):
+        await blend_state_handler(message, state)
+        return
+
+    if not message.media_group_id:
+        await message.answer("Пожалуйста, отправьте фотографии группой")
+        return
+    logger.error(message.media_group_id)
+
+    if not message.photo:
+        await message.answer(f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` или `перемешать {message.media_group_id}`, когда все фотографии будут загружены", parse_mode=ParseMode.MARKDOWN)
+        return
+
+    file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+    downloaded_file = await bot.download_file(file_path=file.file_path)
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token, "Content-Type": "application/json"}
+
+    attachment = await upload_file(file=file, header=header)
+    if not attachment:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    upload_filename = attachment["upload_filename"]
+
+    new_blend = Blend(user=user, group_id=message.media_group_id, uploaded_filename=upload_filename)
+    await new_blend.asave()
+
+    await message.answer(
+        f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` или `перемешать {message.media_group_id}`, когда все фотографии будут загружены",
+        parse_mode=ParseMode.MARKDOWN)
+    await message.answer(f"фото загружено")
+
+
+@dp.message(BlendStateMachine.blend)
+async def blend_state_handler(message: Message, state: FSMContext):
+    logger.debug("ASD")
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    group_id = message.text.split(" ")[-1]
+    blends = await Blend.objects.get_blends_by_group_id(group_id)
+
+    await blend_trigger(blends)
+    await state.clear()
+
+
 @dp.message()
 async def handle_any(message: Message, state):
+    await state.clear()
+
     if not await is_user_exist(chat_id=str(message.chat.id)):
         await message.answer("Напишите боту /start")
         return

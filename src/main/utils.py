@@ -1,6 +1,7 @@
 import json
 
 import requests
+from aiogram.fsm.state import State, StatesGroup
 from translate import Translator
 
 from main.handlers.utils.interactions import ATTACHMENTS_URL
@@ -32,3 +33,8 @@ async def upload_file(file, header: dict[str, str]):
 async def put_file(attachment, downloaded_file):
     headers = {"Content-Type": "image/png"}
     return requests.put(attachment["upload_url"], data=downloaded_file, headers=headers)
+
+
+class BlendStateMachine(StatesGroup):
+    image = State()
+    blend = State()

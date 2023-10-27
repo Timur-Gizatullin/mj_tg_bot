@@ -41,6 +41,20 @@ redis = ["redis (>=4.6.0,<4.7.0)"]
 test = ["aresponses (>=2.1.6,<2.2.0)", "pycryptodomex (>=3.18,<4.0)", "pytest (>=7.4.0,<7.5.0)", "pytest-aiohttp (>=1.0.4,<1.1.0)", "pytest-asyncio (>=0.21.0,<0.22.0)", "pytest-cov (>=4.0.0,<4.1.0)", "pytest-html (>=3.2.0,<3.3.0)", "pytest-lazy-fixture (>=0.6.3,<0.7.0)", "pytest-mock (>=3.10.0,<3.11.0)", "pytest-mypy (>=0.10.0,<0.11.0)", "pytz (>=2022.7.1,<2022.8.0)"]
 
 [[package]]
+name = "aiogram-media-group"
+version = "0.5.1"
+description = "Aiogram handler for media groups (also known as albums)"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "aiogram-media-group-0.5.1.tar.gz", hash = "sha256:a5ab6c1dea4a0729c25fdb90b2310537d71d8d3554765d302b37156edaa51d33"},
+    {file = "aiogram_media_group-0.5.1-py3-none-any.whl", hash = "sha256:31fd150769075e23e6e161b444d553b8b62a33cd7d85ef770393572470a5ca38"},
+]
+
+[package.dependencies]
+aiogram = ">2"
+
+[[package]]
 name = "aiohttp"
 version = "3.8.5"
 description = "Async http client/server framework (asyncio)"
@@ -1861,4 +1875,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "91d3cda4f5c65ce97d4a7e83e82d690e7555fb56f59169fad1b10859587271a2"
+content-hash = "6f3686ef4317ffee0d2bdef6df9c14581bd8cf31b20a0c625109f3e088b17253"

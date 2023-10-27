@@ -10,7 +10,7 @@ class MjUserTokenQueue:
         if self.interaction_left_count > 0:
             self.interaction_left_count -= 1
             return self.db_senders[self.current_sender_index]
-        if self.current_sender_index == len(self.db_senders) and self.interaction_left_count <= 0:
+        if self.current_sender_index == len(self.db_senders) - 1 and self.interaction_left_count <= 0:
             self.current_sender_index = 0
             self.interaction_left_count = 20
             return self.db_senders[self.current_sender_index]

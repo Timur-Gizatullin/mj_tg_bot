@@ -1,9 +1,11 @@
+import json
 from typing import Any
 
 import requests
+from loguru import logger
 
 from main.handlers.utils.mj_user import MjUserTokenQueue
-from main.models import Prompt
+from main.models import Prompt, Blend
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
 INTERACTION_URL = "https://discord.com/api/v9/interactions"
@@ -157,3 +159,33 @@ async def describe_reset_trigger(message_id: str):
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
     return response.status_code
+
+async def blend_trigger(blends: list[Blend]):
+    attachments = []
+    for blend in blends:
+        attachments.append({
+                    "id": "0",
+                    "filename": blend.uploaded_filename.split("/")[-1],
+                    "uploaded_filename": blend.uploaded_filename,
+                })
+
+    payload = _trigger_payload(
+        2,
+        {
+            "version": "1166847114203123796",
+            "id": "1062880104792997970",
+            "name": "blend",
+            "type": 1,
+            # "options": [{"type": 11, "name": "image1", "value": 0}, {"type": 11, "name": "image2", "value": 1}],
+            "attachments": attachments
+        },
+    )
+
+    logger.debug(payload)
+
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token}
+
+    response = requests.post(INTERACTION_URL, json=payload, headers=header)
+    logger.debug(response.text)
+

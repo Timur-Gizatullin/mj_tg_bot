@@ -11,5 +11,6 @@ class DescribeManager(models.Manager):
 class Describe(models.Model):
     file_name: str = models.CharField()
     chat_id: str = models.CharField()
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     objects = DescribeManager()

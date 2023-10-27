@@ -1,6 +1,7 @@
-__all__ = ["Prompt", "User", "Referral", "TelegramAnswer", "BanWord", "Pay", "Describe"]
+__all__ = ["Prompt", "User", "Referral", "TelegramAnswer", "BanWord", "Pay", "Describe", "Blend"]
 
 from main.models.ban_word import BanWord
+from main.models.blend import Blend
 from main.models.describe import Describe
 from main.models.pay import Pay
 from main.models.prompts import Prompt
