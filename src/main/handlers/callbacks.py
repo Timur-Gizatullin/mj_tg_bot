@@ -241,7 +241,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
         await callback.answer()
         return
     if action == "gpt":
-        pass
+        pass  # TODO добавить хелп месседж
         await callback.answer()
         return
     if action == "lk":
@@ -289,7 +289,7 @@ async def lk_callback(callback: types.CallbackQuery):
             "● Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
             "● При оплате в USDT - 1 usdt = 100р"
         )
-        # TODO
+        # TODO pay
         await callback.message.answer(answer)
 
 
@@ -300,7 +300,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
     prompt = prompt.replace(".", " ")
 
     if action == "gpt":
-        pass
+        pass  # TODO привязать гпт для помощи в генерации промптов
         await callback.answer()
         return
     if action == "stay":

@@ -33,7 +33,7 @@ dp = Dispatcher()
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
 
 openai.api_key = config("OPEN_AI_API_KEY")
-gpt = openai.Completion
+gpt = openai.ChatCompletion
 
 
 async def is_user_exist(chat_id: str) -> User | None:
@@ -180,7 +180,15 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
         return
 
     try:
-        gpt_answer = await gpt.acreate(model=config("MODEL_ENGINE"), prompt=prompt, max_tokens=config("MAX_TOKENS"))
+        gpt_answer = await gpt.acreate(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Who won the world series in 2020?"},
+                {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+                {"role": "user", "content": "Where was it played?"},
+            ],
+        )  # TODO доделать
     except Exception as e:
         logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
         await message.answer("ChatGPT временно не доступен, попробуйте позже")

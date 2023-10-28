@@ -4,6 +4,7 @@ from main.models import (
     BanWord,
     Blend,
     Describe,
+    GptContext,
     Pay,
     Prompt,
     Referral,
@@ -20,3 +21,4 @@ admin.site.register(Prompt)
 admin.site.register(Pay)
 admin.site.register(Describe)
 admin.site.register(Blend)
+admin.site.register(GptContext)

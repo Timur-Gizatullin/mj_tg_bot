@@ -10,14 +10,28 @@ start_buttons = (
 )
 
 link_buttons = (
-    types.InlineKeyboardButton(text="Инструкции, лайфхаки, настройки, стили, ракурсы, промпты", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"),
-    types.InlineKeyboardButton(text="Чат технической поддержки", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"),
-    types.InlineKeyboardButton(text="Наш сайт с огромной базой информации и регулярными обновлениями", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"),
+    types.InlineKeyboardButton(
+        text="Инструкции, лайфхаки, настройки, стили, ракурсы, промпты",
+        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+    ),
+    types.InlineKeyboardButton(
+        text="Чат технической поддержки", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"
+    ),
+    types.InlineKeyboardButton(
+        text="Наш сайт с огромной базой информации и регулярными обновлениями",
+        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+    ),
 )
 
 example_buttons = (
-    types.InlineKeyboardButton(text="Примеры изображений сгенерированных нашим ботом", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"),
-    types.InlineKeyboardButton(text="Примеры изображений в стиле Cyber Punk", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"),
+    types.InlineKeyboardButton(
+        text="Примеры изображений сгенерированных нашим ботом",
+        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+    ),
+    types.InlineKeyboardButton(
+        text="Примеры изображений в стиле Cyber Punk",
+        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+    ),
 )
 
 
