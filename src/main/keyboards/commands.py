@@ -24,7 +24,8 @@ example_buttons = (
 async def get_commands_keyboard(type: str):
     builder = InlineKeyboardBuilder()
     if type == "start":
-        builder.row(*start_buttons)
+        for button in start_buttons:
+            builder.row(button)
     if type == "start_links":
         builder.add(*link_buttons, *example_buttons)
     if type == "links":

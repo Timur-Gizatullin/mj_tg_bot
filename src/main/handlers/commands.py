@@ -109,10 +109,10 @@ async def create_referral(message: Message, state) -> None:
 
     referrer = await User.objects.get_user_by_username(username=message.from_user.username)
 
-    referral_key = await Referral.objects.create_referral(referrer=referrer)
-    referral = f"{BOT_HOST}{referral_key}"
+    referral = await Referral.objects.create_referral(referrer=referrer)
+    referral_link = f"{BOT_HOST}{referral.key}"
 
-    await message.answer(f"Ваша ссылка: {referral}")
+    await message.answer(f"Ваша ссылка: {referral_link}")
 
 
 @dp.message(Command("imagine"))
@@ -136,6 +136,8 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         await message.answer(censor_message_answer)
         return
 
+    prompt = prompt.replace(" ", ".")
+
     suggestion = (
         "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
         "(Стоимость 1 токен)"
@@ -143,8 +145,8 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
 
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
-        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"suggestion_gpt_{message.text}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data="suggestion_stay"),
+        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"suggestion_gpt_{prompt}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"suggestion_stay_{prompt}"),
     )
     kb = builder.row(*prompt_buttons)
 

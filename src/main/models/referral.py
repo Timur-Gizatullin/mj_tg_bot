@@ -13,21 +13,18 @@ class ReferralManager(models.Manager):
         new_referral = Referral(referrer=referrer, key=key)
         new_referral.save()
 
-        return new_referral.key
+        return new_referral
 
     @sync_to_async()
     def get_referral(self, referral_key: int) -> "Referral":
         return self.filter(key=referral_key, is_active=True).first()
 
     @sync_to_async()
-    def delete_referral_and_update_referrer_generations_count(self, referral_key: int) -> None:
+    def update_referrer_generations_count(self, referral_key: int) -> None:
         referral = self.filter(key=referral_key).first()
 
         referral.referrer.generations_count += 2
         referral.referrer.save()
-
-        referral.is_active = False
-        referral.save()
 
     @sync_to_async()
     def get_referral_by_user(self, user: User) -> "Referral":
@@ -42,7 +39,7 @@ class Referral(models.Model):
         related_name="referrals",
         verbose_name="referrer",
     )
-    is_active = models.BooleanField(default=True)
+    used_count = models.IntegerField(default=int())
 
     objects = ReferralManager()
 

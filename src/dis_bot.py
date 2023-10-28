@@ -43,6 +43,7 @@ class DiscordMiddleWare(discord.Client):
             image_proxy_url = message_after.embeds[0].image.proxy_url
             file_name = image_proxy_url.split("/")[-1]
             describe_object: Describe = await Describe.objects.get_describe_by_file_name(file_name)
+            logger.debug("Send edited message to telegram")
             await bot.send_photo(
                 chat_id=describe_object.chat_id,
                 photo=image_proxy_url,
@@ -66,6 +67,7 @@ class DiscordMiddleWare(discord.Client):
             await bot.send_message(chat_id=chat_id, text=f"Запрос {prompt} обрабатывается")
             return
 
+        logger.debug("Send new_message message to telegram")
         await self._send_photo_to_telegram(message=message, chat_id=chat_id, prompt=prompt)
 
     async def _send_photo_to_telegram(self, message: Message, chat_id: str, prompt: str):
@@ -103,7 +105,7 @@ class DiscordMiddleWare(discord.Client):
         )
 
         kb_links = await get_commands_keyboard("links")
-        await bot.send_message(chat_id=chat_id, reply_markup=kb_links)
+        await bot.send_message(chat_id=chat_id, text="Может быть полезно:", reply_markup=kb_links)
 
         await telegram_user.decrease_generations_count()
 
