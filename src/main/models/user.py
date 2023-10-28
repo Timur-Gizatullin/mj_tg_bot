@@ -52,7 +52,7 @@ class UserManager(AbstractUserManager):
 class User(AbstractUser):
     telegram_username: str = models.CharField(unique=True, null=True)
     chat_id: str = models.IntegerField(unique=True, null=True)
-    generations_count: int = models.IntegerField(null=False, default=10)
+    balance: int = models.IntegerField(null=False, default=10)
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
     password = models.CharField(blank=True)
 

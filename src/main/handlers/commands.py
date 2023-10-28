@@ -17,7 +17,7 @@ from main.handlers.utils.interactions import (
     blend_trigger,
     mj_user_token_queue,
 )
-from main.keyboards.commands import start_buttons, get_commands_keyboard
+from main.keyboards.commands import get_commands_keyboard
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Blend, Describe, Referral, TelegramAnswer, User
 from main.utils import (
@@ -82,8 +82,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     links_kb = await get_commands_keyboard("start_links")
 
     await message.answer(
-        "Запуская данный бот Вы даете согласие на правила использования нашего сервиса.",
-        reply_markup=links_kb
+        "Запуская данный бот Вы даете согласие на правила использования нашего сервиса.", reply_markup=links_kb
     )
 
 
@@ -133,7 +132,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
-    if message.text and await is_has_censor(prompt, ban_words): #TODO исправить
+    if message.text and await is_has_censor(prompt, ban_words):  # TODO исправить
         await message.answer(censor_message_answer)
         return
 
@@ -145,7 +144,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
         types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"suggestion_gpt_{message.text}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data="suggestion_stay")
+        types.InlineKeyboardButton(text="Оставить мой", callback_data="suggestion_stay"),
     )
     kb = builder.row(*prompt_buttons)
 

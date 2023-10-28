@@ -2,8 +2,10 @@ import os
 
 import django
 from aiogram import Router, types
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
+from main.constants import BOT_HOST
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
     describe_reset_trigger,
@@ -21,7 +23,7 @@ from main.keyboards.pay import get_gen_count, get_inline_keyboard_from_buttons
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import Prompt, User  # noqa: E402
+from main.models import Prompt, Referral, User  # noqa: E402
 
 callback_router = Router()
 
@@ -213,11 +215,13 @@ async def callbacks_describe(callback: types.CallbackQuery):
         await describe_reset_trigger(message_id=telegram_user.chat_id)
 
 
-#Common
+# Common
+
 
 @callback_router.callback_query(lambda c: c.data.startswith("start"))
 async def menu_start_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
+    current_user: User = await User.objects.get_user_by_chat_id(str(callback.message.chat.id))
 
     if action == "mj":
         intro_message = (
@@ -243,13 +247,45 @@ async def menu_start_callback(callback: types.CallbackQuery):
         await callback.answer()
         return
     if action == "lk":
-        pass
+        referral: Referral = await Referral.objects.get_referral_by_user(user=current_user)
+
+        builder = InlineKeyboardBuilder()
+        answer = f"● Ваш баланс {current_user.balance}\n" f"● Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+
         await callback.answer()
         return
     if action == "ref":
-        pass
+        referral: Referral = await Referral.objects.get_referral_by_user(user=current_user)
+        answer = (
+            "● За каждого реферала Вам будет начислено 6 токенов\n\n"
+            f"● Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+        )
         await callback.answer()
         return
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("lk"))
+async def lk_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    current_user: User = await User.objects.get_user_by_chat_id(str(callback.message.chat.id))
+
+    if action == "options":
+        answer = (
+            f"● Ваш баланс {current_user.balance} токена\n"
+            "● Одна генерация Midjourney = 2"
+            "Отдельно тарифицируются генерации Upscale:"
+            "   Увеличение базового изображения, зум, изменение масштаьа и тд = 2"
+            "   Upscale 2x = 4"
+            "   Upscale 4x = 8"
+            "● Одна генерация Dal-E = 2"
+            "● Один запрос Chat GPT в т.ч. По формированию промпта = 1"
+            "● При оплате в USDT - 1 usdt = 100р"
+        )
+        # TODO
+        await callback.message.answer(answer)
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("suggestion"))

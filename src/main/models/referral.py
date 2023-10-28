@@ -29,6 +29,10 @@ class ReferralManager(models.Manager):
         referral.is_active = False
         referral.save()
 
+    @sync_to_async()
+    def get_referral_by_user(self, user: User) -> "Referral":
+        return self.filter(referrer=user).first()
+
 
 class Referral(models.Model):
     key: str = models.CharField(unique=True, null=False)
