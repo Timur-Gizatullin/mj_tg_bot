@@ -9,6 +9,8 @@ from decouple import config
 from discord.message import Message
 from loguru import logger
 
+from main.keyboards.commands import get_commands_keyboard
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
@@ -99,6 +101,9 @@ class DiscordMiddleWare(discord.Client):
         await bot.send_document(
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )
+
+        kb_links = await get_commands_keyboard("links")
+        await bot.send_message(chat_id=chat_id, reply_markup=kb_links)
 
         await telegram_user.decrease_generations_count()
 

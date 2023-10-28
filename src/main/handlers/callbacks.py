@@ -73,6 +73,17 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    help_message = (
+        "Vary Strong - вносит больше изменений в создаваемые вариации, увеличивает урвоень художественности и "
+        "воображемых элементов\n\n"
+        "Vary stable - вносит небольшие изменения в создоваемые вариации, приближает изображение к стандартным \n\n"
+        "Zoom out - масштабирует сгенерированную картинку,  дорисовывая объект и фон\n\n"
+        "Upscale -  увеличивает размер изображения, добавляя мельчайшие детали,"
+        " в 2 (2048х2048) и 4 рааза (4096х4096), стандартное изображение - 1024x1024."
+    )
+
+    await callback.message.answer(help_message)
+
     if action == "U1":
         await queue_handler.add_task(
             send_upsample_trigger, upsample_index="1", queue=queue, user_role=telegram_user.role
@@ -126,8 +137,6 @@ async def callback_vary(callback: types.CallbackQuery):
         await queue_handler.add_task(
             send_vary_trigger, vary_type="low_variation", queue=queue, user_role=telegram_user.role
         )
-    elif action == "region":
-        pass  # TODO
 
     await callback.answer()
 
@@ -244,7 +253,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("suggestion"))
-async def menu_start_callback(callback: types.CallbackQuery):
+async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     prompt = callback.data.split("_")[-1]
 

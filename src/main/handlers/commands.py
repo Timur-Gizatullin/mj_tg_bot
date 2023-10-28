@@ -15,10 +15,9 @@ from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
     blend_trigger,
-    imagine_trigger,
     mj_user_token_queue,
 )
-from main.keyboards.commands import start_buttons
+from main.keyboards.commands import start_buttons, get_commands_keyboard
 from main.keyboards.pay import get_pay_keyboard
 from main.models import BanWord, Blend, Describe, Referral, TelegramAnswer, User
 from main.utils import (
@@ -76,7 +75,16 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
 
-    await message.answer(initial_message, reply_markup=start_buttons)
+    start_kb = await get_commands_keyboard("start")
+
+    await message.answer(initial_message, reply_markup=start_kb)
+
+    links_kb = await get_commands_keyboard("start_links")
+
+    await message.answer(
+        "Запуская данный бот Вы даете согласие на правила использования нашего сервиса.",
+        reply_markup=links_kb
+    )
 
 
 @dp.message(Command("help"))
@@ -84,7 +92,7 @@ async def help_handler(message: Message, state) -> None:
     await state.clear()
 
     if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")  # TODO добавить сообщение в админку
+        await message.answer("Напишите боту /start")
         return
 
     help_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.HELP)
