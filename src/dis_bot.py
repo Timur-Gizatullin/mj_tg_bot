@@ -107,8 +107,6 @@ class DiscordMiddleWare(discord.Client):
         kb_links = await get_commands_keyboard("links")
         await bot.send_message(chat_id=chat_id, text="Может быть полезно:", reply_markup=kb_links)
 
-        await telegram_user.decrease_generations_count()
-
 
 if __name__ == "__main__":
     intents = discord.Intents.default()
