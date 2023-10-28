@@ -143,6 +143,14 @@ async def imagine_trigger(message, prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
+    help_message = (
+        "Кнопки U1, U2, U3, U4 - предназначены для увеличения картинки под соответсвующим номером в высоком разрешении;\n"
+        "Кнопки V1, V2, V3, V4 - предназначены для генерации 4 новых изображений исходной с картинкой под соответсвующим номером;\n"
+        "Кнопка предназначена для генерации 4 новых изображений отличающихся по стилистике от первой генерации."
+    )
+
+    await message.answer(help_message)
+
     requests.post(INTERACTION_URL, json=payload, headers=header)
 
 

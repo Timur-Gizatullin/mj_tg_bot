@@ -202,3 +202,57 @@ async def callbacks_describe(callback: types.CallbackQuery):
         )
     elif callback.data == "reset":
         await describe_reset_trigger(message_id=telegram_user.chat_id)
+
+
+#Common
+
+@callback_router.callback_query(lambda c: c.data.startswith("start"))
+async def menu_start_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+
+    if action == "mj":
+        intro_message = (
+            "• Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
+            "(Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане (моноширный)\n"
+            "❗️Порядок слов очень важен! Чем раньше слово, тем сильнее его вес;\n"
+            "● Не нужно писать писать <создай изображение>, это ухудшит результат;\n"
+            "Для создания изображения на основании твоего или объеденения двух изображений, отправь картинку боту и "
+            "напиши промпт в комментарии к ней\n"
+            "• Внимание!!! Строго запрещены запросы изображения 18+, "
+            "работает AI модератор, несоблюдение правил приведет е бану."
+        )
+
+        await callback.message.answer(intro_message)
+        await callback.answer()
+        return
+    if action == "dale":
+        pass
+        await callback.answer()
+        return
+    if action == "gpt":
+        pass
+        await callback.answer()
+        return
+    if action == "lk":
+        pass
+        await callback.answer()
+        return
+    if action == "ref":
+        pass
+        await callback.answer()
+        return
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("suggestion"))
+async def menu_start_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    prompt = callback.data.split("_")[-1]
+
+    if action == "gpt":
+        pass
+        await callback.answer()
+        return
+    if action == "stay":
+        await imagine_trigger(callback.message, prompt)
+        await callback.answer()
+        return

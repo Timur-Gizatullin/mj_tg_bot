@@ -5,6 +5,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from decouple import config
 from loguru import logger
 
@@ -68,9 +69,9 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
-    new_user = await User.objects.get_user_by_username(username=message.from_user.username)
+    existing_user = await User.objects.get_user_by_username(username=message.from_user.username)
 
-    if not new_user:
+    if not existing_user:
         await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
@@ -124,13 +125,23 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
-    if message.text and await is_has_censor(prompt, ban_words):
+    if message.text and await is_has_censor(prompt, ban_words): #TODO исправить
         await message.answer(censor_message_answer)
         return
 
-    await imagine_trigger(message=message, prompt=prompt)
+    suggestion = (
+        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
+        "(Стоимость 1 токен)"
+    )
 
-    await message.answer("Запрос отправлен")
+    builder = InlineKeyboardBuilder()
+    prompt_buttons = (
+        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"suggestion_gpt_{message.text}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data="suggestion_stay")
+    )
+    kb = builder.row(*prompt_buttons)
+
+    await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
 @dp.message(Command("mj_pay"))
