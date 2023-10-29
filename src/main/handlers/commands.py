@@ -19,7 +19,15 @@ from main.handlers.utils.interactions import (
 )
 from main.keyboards.commands import get_commands_keyboard
 from main.keyboards.pay import get_pay_keyboard
-from main.models import BanWord, Blend, Describe, Referral, TelegramAnswer, User
+from main.models import (
+    BanWord,
+    Blend,
+    Describe,
+    GptContext,
+    Referral,
+    TelegramAnswer,
+    User,
+)
 from main.utils import (
     BlendStateMachine,
     is_has_censor,
@@ -166,7 +174,8 @@ async def buy_handler(message: types.Message):
 async def gpt_handler(message: types.Message, state, command: CommandObject):
     await state.clear()
 
-    if not await is_user_exist(chat_id=str(message.chat.id)):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
         await message.answer("Напишите боту /start")
         return
 
@@ -179,22 +188,32 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
         await message.answer(censor_message_answer)
         return
 
+    new_gpt_context = GptContext(user=user, role="user", content=prompt, telegram_chat_id=message.chat.id)
+    await new_gpt_context.asave()
+
+    gpt_contexts: list[GptContext] = await GptContext.objects.get_gpt_contexts_by_telegram_chat_id(
+        telegram_chat_id=message.chat.id
+    )
+    messages = []
+    for gpt_context in gpt_contexts:
+        message = {"role": gpt_context.role, "content": gpt_context.content}
+        messages.append(message)
+
     try:
-        gpt_answer = await gpt.acreate(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Who won the world series in 2020?"},
-                {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-                {"role": "user", "content": "Where was it played?"},
-            ],
-        )  # TODO доделать
+        gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
     except Exception as e:
         logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
         await message.answer("ChatGPT временно не доступен, попробуйте позже")
         return
 
-    await message.answer(gpt_answer.choices[0].text)
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="сбросить контекст", callback_data="gpt"))
+
+    await message.answer(gpt_answer.choices[0].text, reply_markup=builder.as_markup())
+
+    if len(gpt_contexts) >= 15:
+        await GptContext.objects.delete_gpt_contexts(gpt_contexts)
+        await message.answer("Контекст очищен")
 
 
 @dp.message(Command("describe"))

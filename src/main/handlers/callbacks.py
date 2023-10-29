@@ -23,7 +23,7 @@ from main.keyboards.pay import get_gen_count, get_inline_keyboard_from_buttons
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import Prompt, Referral, User  # noqa: E402
+from main.models import GptContext, Prompt, Referral, User  # noqa: E402
 
 callback_router = Router()
 
@@ -241,7 +241,13 @@ async def menu_start_callback(callback: types.CallbackQuery):
         await callback.answer()
         return
     if action == "gpt":
-        pass  # TODO добавить хелп месседж
+        answer = (
+            "Введи свой запрос с командой /gpt\n\n"
+            "Бот поддерживает функционал CHAT GPT4, максимальный контекст - 15 запросов.\n\n"
+            "📂Для работы с файлами, просто отправьте файл боту для его обработки и "
+            "укажите что с ним необходимо сделать в комментарии"
+        )
+        await callback.message.answer(answer)
         await callback.answer()
         return
     if action == "lk":
@@ -307,3 +313,11 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await imagine_trigger(callback.message, prompt)
         await callback.answer()
         return
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("gpt"))
+async def gpt_callback(callback: types.CallbackQuery):
+    gpt_contexts = await GptContext.objects.get_gpt_contexts_by_telegram_chat_id(callback.message.chat.id)
+    await GptContext.objects.delete_gpt_contexts(gpt_contexts)
+
+    await callback.answer("Контекст очищен")
