@@ -23,7 +23,7 @@ class ReferralManager(models.Manager):
     def update_referrer_generations_count(self, referral_key: int) -> None:
         referral = self.filter(key=referral_key).first()
 
-        referral.referrer.generations_count += 2
+        referral.referrer.generations_count += 6
         referral.referrer.save()
 
     @sync_to_async()

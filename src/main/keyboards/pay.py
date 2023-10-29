@@ -25,14 +25,3 @@ async def get_pay_keyboard(service: str) -> InlineKeyboardMarkup:
             builder.row(mj_button)
 
     return builder.as_markup()
-
-
-def get_gen_count(amount: str):
-    if amount == "1.00":
-        return 10
-    if amount == "2.00":
-        return 20
-    if amount == "5.00":
-        return 55
-    if amount == "10.00":
-        return 110

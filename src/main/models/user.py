@@ -62,28 +62,27 @@ class User(AbstractUser):
         name = self.email if self.email else self.telegram_username
         return name
 
-    @sync_to_async()
-    def decrease_generations_count(self):
-        self.generations_count -= 1
-        self.save()
+    async def decrease_generations_count(self, token: int):
+        self.balance -= token
+        await self.asave()
 
 
 class UserFilter(admin.SimpleListFilter):
     title = "generations count"
-    parameter_name = "generations_count"
-    field_name = "generations__count"
+    parameter_name = "balance"
+    field_name = "balance"
 
     def lookups(self, request, model_admin):
         users = User.objects.all()
         for user in users:
-            yield (user.generations_count, user.generations_count)
+            yield (user.balance, user.balance)
 
     def queryset(self, request, queryset):
-        generations_count = self.value()
-        print(generations_count)
-        if not generations_count:
+        balance = self.value()
+        print(balance)
+        if not balance:
             return queryset
-        return queryset.filter(generations_count__lte=generations_count)
+        return queryset.filter(balance__lte=balance)
 
 
 class UserAudit(admin.ModelAdmin):

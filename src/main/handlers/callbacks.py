@@ -19,7 +19,7 @@ from main.handlers.utils.interactions import (
     send_zoom_trigger,
 )
 from main.handlers.utils.wallet import get_pay_link
-from main.keyboards.pay import get_gen_count, get_inline_keyboard_from_buttons
+from main.keyboards.pay import get_inline_keyboard_from_buttons
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -173,28 +173,33 @@ async def callback_pan(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@callback_router.callback_query(lambda c: c.data.startswith("mjpay"))
-async def callback_mj_pay(callback: types.CallbackQuery):
-    amount = f"{callback.data.split('_')[1]}.00"
-    desc = "Get descriptions from mid journey on your telegram account"
+@callback_router.callback_query(lambda c: c.data.startswith("pay_choose"))
+async def callback_pay(callback: types.CallbackQuery):
+    action = callback.data.split('_')[-3]
+    amount = callback.data.split('_')[-2]
+    token = callback.data.split('_')[-1]
 
-    pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
+    amount = str(float(int(amount)//100))
 
-    if not pay_link:
-        await callback.message.answer("Что-то пошло не так :(")
+    if action == "wallet":
+        desc = "Get generations from mid journey on your telegram account"
+
+        pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
+
+        if not pay_link:
+            pay_link="https://docs.wallet.tg/pay/#section/Get-started"
+        #     await callback.message.answer("Что-то пошло не так :(")
+        #     await callback.answer()
+        #     return
+
+        pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
+        key_board = get_inline_keyboard_from_buttons((pay_button,))
+
+        await callback.message.answer(
+            f"Get {token} tokens for {amount}$\n<b>Enjoy!</b>",
+            reply_markup=key_board
+        )
         await callback.answer()
-        return
-
-    pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
-    key_board = get_inline_keyboard_from_buttons((pay_button,))
-
-    gen_count = get_gen_count(amount=amount)
-
-    await callback.message.answer(
-        f"Get {gen_count} prompts for {amount}$\n<b>Enjoy!</b>",
-        reply_markup=key_board,
-    )
-    await callback.answer()
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("describe"))
@@ -257,7 +262,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
             referral = await Referral.objects.create_referral(current_user)
 
         builder = InlineKeyboardBuilder()
-        answer = f"● Ваш баланс {current_user.balance}\n" f"● Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+        answer = f"Ваш баланс {current_user.balance}\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
         await callback.message.answer(answer, reply_markup=builder.as_markup())
@@ -270,8 +275,8 @@ async def menu_start_callback(callback: types.CallbackQuery):
             referral = await Referral.objects.create_referral(current_user)
 
         answer = (
-            "● За каждого реферала Вам будет начислено 6 токенов\n\n"
-            f"● Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+            "За каждого реферала Вам будет начислено 6 токенов\n\n"
+            f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
         )
         await callback.message.answer(answer)
 
@@ -286,18 +291,54 @@ async def lk_callback(callback: types.CallbackQuery):
 
     if action == "options":
         answer = (
-            f"● Ваш баланс в токенах: {current_user.balance}\n"
-            "● Одна генерация Midjourney = 2\n"
+            f"Ваш баланс в токенах: {current_user.balance}\n"
+            "Одна генерация Midjourney = 2\n"
             "Отдельно тарифицируются генерации Upscale:\n"
-            "   Увеличение базового изображения, зум, изменение масштаьа и тд = 2\n"
-            "   Upscale 2x = 4\n"
-            "   Upscale 4x = 8\n"
-            "● Одна генерация Dal-E = 2\n"
-            "● Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
-            "● При оплате в USDT - 1 usdt = 100р"
+            "Увеличение базового изображения, зум, изменение масштаьа и тд = 2\n"
+            "Upscale 2x = 4\n"
+            "Upscale 4x = 8\n"
+            "Одна генерация Dal-E = 2\n"
+            "Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
+            "При оплате в USDT - 1 usdt = 100р"
         )
-        # TODO pay
-        await callback.message.answer(answer)
+
+        options_button = (
+            types.InlineKeyboardButton(text="4 токена = 20 руб", callback_data="pay-options_4_20"),
+            types.InlineKeyboardButton(text="10 токенов = 50 руб", callback_data="pay-options_10_50"),
+            types.InlineKeyboardButton(text="20 токенов = 90 руб", callback_data="pay-options_20_90"),
+            types.InlineKeyboardButton(text="50 токенов = 200 руб", callback_data="pay-options_50_200"),
+            types.InlineKeyboardButton(text="100 токенов = 400 руб", callback_data="pay-options_100_400"),
+            types.InlineKeyboardButton(text="200 токенов = 800 руб", callback_data="pay-options_200_800"),
+            types.InlineKeyboardButton(text="400 токенов = 1500 руб", callback_data="pay-options_400_1500"),
+            types.InlineKeyboardButton(text="1000 токенов = 3000 руб", callback_data="pay-options_1000_3000"),
+        )
+
+        builder = InlineKeyboardBuilder()
+        j = 0
+        for i in range(len(options_button) // 2):
+            builder.row(options_button[j], options_button[j + 1])
+            j += 2
+
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("pay-options"))
+async def pay_options_callback(callback: types.CallbackQuery):
+    token = callback.data.split("_")[1]
+    amount = callback.data.split("_")[-1]
+
+    answer = f"Платеж на {token} успешно создан"
+    builder = InlineKeyboardBuilder()
+    buttons = (
+        types.InlineKeyboardButton(text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"),
+        types.InlineKeyboardButton(text="Telegram Wallet", callback_data=f"pay_choose_wallet_{amount}_{token}"),
+    )
+    for button in buttons:
+        builder.row(button)
+
+    await callback.message.answer(answer, reply_markup=builder.as_markup())
+    await callback.answer()
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("suggestion"))
@@ -308,9 +349,12 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
     if action == "gpt":
         messages = [
-            {"role": "system", "content": "You are an prompt assistant, skilled at making prompt for Mid Journey better. You always give 3 options"},
+            {"role": "system",
+             "content": "You are an prompt assistant, skilled at making prompt for Mid Journey better. You always give 3 options"},
             {"role": "user", "content": prompt}
         ]
+
+        user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
@@ -318,7 +362,12 @@ async def suggestion_callback(callback: types.CallbackQuery):
         buttons = [types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-gpt_{i}") for i in range(1, 4)]
         builder.row(*buttons)
 
-        await callback.message.answer(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
+        user.balance -= 1
+        await user.asave()
+
+        await callback.message.answer(text=prompt_suggestions.choices[0].message.content,
+                                      reply_markup=builder.as_markup())
+        await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
         await callback.answer()
         return
     if action == "stay":
@@ -339,6 +388,6 @@ async def gpt_callback(callback: types.CallbackQuery):
 async def gpt_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
 
-    prompt = callback.message.text.split("\n\n")[choose-1][2:]
+    prompt = callback.message.text.split("\n\n")[choose - 1][2:]
 
     await imagine_trigger(message=callback.message, prompt=prompt)
