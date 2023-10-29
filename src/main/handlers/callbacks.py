@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
+from main.handlers.commands import gpt
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
     describe_reset_trigger,
@@ -306,7 +307,18 @@ async def suggestion_callback(callback: types.CallbackQuery):
     prompt = prompt.replace(".", " ")
 
     if action == "gpt":
-        pass  # TODO привязать гпт для помощи в генерации промптов
+        messages = [
+            {"role": "system", "content": "You are an prompt assistant, skilled at making prompt for Mid Journey better. You always give 3 options"},
+            {"role": "user", "content": prompt}
+        ]
+
+        prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+
+        builder = InlineKeyboardBuilder()
+        buttons = [types.InlineKeyboardButton(text=f"{i}", callback_data=f"choose-gpt_{i}") for i in range(1, 4)]
+        builder.row(*buttons)
+
+        await callback.message.answer(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
         await callback.answer()
         return
     if action == "stay":
@@ -321,3 +333,12 @@ async def gpt_callback(callback: types.CallbackQuery):
     await GptContext.objects.delete_gpt_contexts(gpt_contexts)
 
     await callback.answer("Контекст очищен")
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("choose-gpt"))
+async def gpt_choose_callback(callback: types.CallbackQuery):
+    choose = int(callback.data.split("_")[1])
+
+    prompt = callback.message.text.split("\n\n")[choose-1][2:]
+
+    await imagine_trigger(message=callback.message, prompt=prompt)

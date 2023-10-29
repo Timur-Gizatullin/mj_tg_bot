@@ -41,7 +41,10 @@ async def get_commands_keyboard(type: str):
         for button in start_buttons:
             builder.row(button)
     if type == "start_links":
-        builder.add(*link_buttons, *example_buttons)
+        for button in link_buttons:
+            builder.row(button)
+        for button in example_buttons:
+            builder.row(button)
     if type == "links":
         for button in link_buttons:
             builder.row(button)

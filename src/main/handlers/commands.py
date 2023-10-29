@@ -196,8 +196,8 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
     )
     messages = []
     for gpt_context in gpt_contexts:
-        message = {"role": gpt_context.role, "content": gpt_context.content}
-        messages.append(message)
+        gpt_message = {"role": gpt_context.role, "content": gpt_context.content}
+        messages.append(gpt_message)
 
     try:
         gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
@@ -209,7 +209,7 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text="сбросить контекст", callback_data="gpt"))
 
-    await message.answer(gpt_answer.choices[0].text, reply_markup=builder.as_markup())
+    await message.answer(gpt_answer.choices[0].message.content, reply_markup=builder.as_markup())
 
     if len(gpt_contexts) >= 15:
         await GptContext.objects.delete_gpt_contexts(gpt_contexts)
@@ -337,7 +337,6 @@ async def blend_image_state_handler(message: Message, state: FSMContext):
 
 @dp.message(BlendStateMachine.blend)
 async def blend_state_handler(message: Message, state: FSMContext):
-    logger.debug("ASD")
     user = await is_user_exist(chat_id=str(message.chat.id))
     if not user:
         await message.answer("Напишите боту /start")
