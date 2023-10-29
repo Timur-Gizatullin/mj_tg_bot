@@ -11,7 +11,6 @@ class TelegramAnswerManager(models.Manager):
         if telegram_answer:
             return telegram_answer.message
         else:
-            # TODO
             return "Стандартное сообщение: добавить константы"
 
 

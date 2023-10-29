@@ -315,7 +315,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
-        buttons = [types.InlineKeyboardButton(text=f"{i}", callback_data=f"choose-gpt_{i}") for i in range(1, 4)]
+        buttons = [types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-gpt_{i}") for i in range(1, 4)]
         builder.row(*buttons)
 
         await callback.message.answer(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
