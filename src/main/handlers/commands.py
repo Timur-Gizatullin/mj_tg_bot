@@ -28,13 +28,7 @@ from main.models import (
     TelegramAnswer,
     User,
 )
-from main.utils import (
-    BlendStateMachine,
-    is_has_censor,
-    put_file,
-    translator,
-    upload_file,
-)
+from main.utils import BlendStateMachine, is_has_censor, put_file, upload_file
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -140,9 +134,14 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         prompt = command.args
     else:
         messages = [
-            {"role": "system",
-             "content": "You are a professional translator from Russian into English, everything that is said to you, you translate into English"},
-            {"role": "user", "content": command.args}
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional translator from Russian into English, "
+                    "everything that is said to you, you translate into English"
+                ),
+            },
+            {"role": "user", "content": command.args},
         ]
 
         prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)

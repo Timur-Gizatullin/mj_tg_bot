@@ -96,6 +96,7 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     telegram_user.balance -= cost
     await telegram_user.asave()
 
+
 @callback_router.callback_query(lambda c: c.data.startswith("U"))
 async def callbacks_upsamples(callback: types.CallbackQuery):
     action = callback.data
@@ -104,7 +105,7 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance-2 <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -154,7 +155,7 @@ async def callback_reset(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance-2 <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -184,7 +185,7 @@ async def callback_vary(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance-2 <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -216,7 +217,7 @@ async def callback_zoom(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance-2 <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -244,7 +245,7 @@ async def callback_pan(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance-2 <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -263,11 +264,11 @@ async def callback_pan(callback: types.CallbackQuery):
 
 @callback_router.callback_query(lambda c: c.data.startswith("pay_choose"))
 async def callback_pay(callback: types.CallbackQuery):
-    action = callback.data.split('_')[-3]
-    amount = callback.data.split('_')[-2]
-    token = callback.data.split('_')[-1]
+    action = callback.data.split("_")[-3]
+    amount = callback.data.split("_")[-2]
+    token = callback.data.split("_")[-1]
 
-    amount = str(float(int(amount)//100))
+    amount = str(float(int(amount) // 100))
 
     if action == "wallet":
         desc = "Get generations from mid journey on your telegram account"
@@ -275,7 +276,7 @@ async def callback_pay(callback: types.CallbackQuery):
         pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
 
         if not pay_link:
-            pay_link="https://docs.wallet.tg/pay/#section/Get-started"
+            pay_link = "https://docs.wallet.tg/pay/#section/Get-started"
         #     await callback.message.answer("Что-то пошло не так :(")
         #     await callback.answer()
         #     return
@@ -283,10 +284,7 @@ async def callback_pay(callback: types.CallbackQuery):
         pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
         key_board = get_inline_keyboard_from_buttons((pay_button,))
 
-        await callback.message.answer(
-            f"Get {token} tokens for {amount}$\n<b>Enjoy!</b>",
-            reply_markup=key_board
-        )
+        await callback.message.answer(f"Get {token} tokens for {amount}$\n<b>Enjoy!</b>", reply_markup=key_board)
         await callback.answer()
 
 
@@ -377,8 +375,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
             referral = await Referral.objects.create_referral(current_user)
 
         answer = (
-            "За каждого реферала Вам будет начислено 6 токенов\n\n"
-            f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+            "За каждого реферала Вам будет начислено 6 токенов\n\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
         )
         await callback.message.answer(answer)
 
@@ -433,7 +430,9 @@ async def pay_options_callback(callback: types.CallbackQuery):
     answer = f"Платеж на {token} успешно создан"
     builder = InlineKeyboardBuilder()
     buttons = (
-        types.InlineKeyboardButton(text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"),
+        types.InlineKeyboardButton(
+            text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"
+        ),
         types.InlineKeyboardButton(text="Telegram Wallet", callback_data=f"pay_choose_wallet_{amount}_{token}"),
     )
     for button in buttons:
@@ -451,9 +450,14 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
     if action == "gpt":
         messages = [
-            {"role": "system",
-             "content": "You are an prompt assistant, skilled at making prompt for Mid Journey better. You always give 3 options"},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": (
+                    "You are an prompt assistant, skilled at making prompt for "
+                    "Mid Journey better. You always give 3 options"
+                ),
+            },
+            {"role": "user", "content": prompt},
         ]
 
         user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
@@ -467,8 +471,9 @@ async def suggestion_callback(callback: types.CallbackQuery):
         user.balance -= 1
         await user.asave()
 
-        await callback.message.answer(text=prompt_suggestions.choices[0].message.content,
-                                      reply_markup=builder.as_markup())
+        await callback.message.answer(
+            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
+        )
         await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
         await callback.answer(cache_time=20)
         return
@@ -491,7 +496,7 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    if telegram_user.balance <= 0:
+    if telegram_user.balance - 2 <= 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
