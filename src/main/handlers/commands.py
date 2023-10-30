@@ -1,4 +1,3 @@
-import langdetect
 import openai
 import requests
 from aiogram import Bot, Dispatcher, types
@@ -31,6 +30,7 @@ from main.models import (
 from main.utils import (
     BlendStateMachine,
     MenuState,
+    callback_data_util,
     is_has_censor,
     put_file,
     upload_file,
@@ -135,11 +135,14 @@ async def mj_handler(message: Message) -> None:
     await user.asave()
 
     if message.text and not message.photo and not message.media_group_id:
-        await handle_imagine(message, user)
+        await handle_imagine(message)
     elif message.photo and not message.text and not message.media_group_id:
         await describe_handler(message, user)
     elif message.media_group_id and not message.text and not message.photo:
         await blend_images_handler(message)
+
+    user.state = UserStateEnum.READY
+    await user.asave()
 
 
 @dp.message(MenuState.gpt)
@@ -219,66 +222,17 @@ async def blend_state_handler(message: Message, state: FSMContext):
 @dp.message(MenuState.dalle)
 async def dale_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
-    if not user:
-        await message.answer("Напишите боту /start")
-        return
-
-    if user.state == UserStateEnum.PENDING:
-        await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
-        return
-
-    user.state = UserStateEnum.PENDING
-    await user.asave()
-
-    if message.text == "":
-        await message.answer("Добавьте описание")
-        user.state = UserStateEnum.READY
-        await user.asave()
-        return
-
-    locale = langdetect.detect(message.text)
-    if locale == "en":
-        prompt = message.text
-    else:
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a professional translator from Russian into English, "
-                    "everything that is said to you, you translate into English"
-                ),
-            },
-            {"role": "user", "content": message.text},
-        ]
-
-        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
-        prompt = prompt.choices[0].message.content
-
-    ban_words = await BanWord.objects.get_active_ban_words()
-    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
-
-    if message.text and await is_has_censor(prompt, ban_words):
-        await message.answer(censor_message_answer)
-        user.state = UserStateEnum.READY
-        await user.asave()
-        return
-
-    prompt = prompt.replace(" ", ".")
-    if prompt[-1] in (".", "!", "?"):
-        prompt = prompt[:-1]
-
     suggestion = (
-        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
+        "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
         "(Стоимость 1 токен)"
     )
-
+    callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
-        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"dalle_suggestion_gpt_{prompt}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{prompt}"),
+        types.InlineKeyboardButton(text="CHAT GPT", callback_data=f"dalle_suggestion_gpt_{message.chat.id}-{message.message_id}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{message.chat.id}-{message.message_id}"),
     )
     kb = builder.row(*prompt_buttons)
-    logger.debug(prompt)
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
     user.state = UserStateEnum.READY
@@ -296,48 +250,19 @@ async def handle_any(message: Message, state):
     await help_handler(message, state)
 
 
-async def handle_imagine(message, user):
-    locale = langdetect.detect(message.text)
-    if locale == "en":
-        prompt = message.text
-    else:
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a professional translator from Russian into English, "
-                    "everything that is said to you, you translate into English"
-                ),
-            },
-            {"role": "user", "content": message.text},
-        ]
-
-        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
-        prompt = prompt.choices[0].message.content
-
-    ban_words = await BanWord.objects.get_active_ban_words()
-    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
-
-    if message.text and await is_has_censor(prompt, ban_words):
-        await message.answer(censor_message_answer)
-        user.state = UserStateEnum.READY
-        await user.asave()
-        return
-
-    prompt = prompt.replace(" ", ".")
-
+async def handle_imagine(message):
     suggestion = (
-        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
+        "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
         "(Стоимость 1 токен)"
     )
 
+    callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
-        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"suggestion_gpt_{prompt}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"suggestion_stay_{prompt}"),
+        types.InlineKeyboardButton(text="CHAT GPT", callback_data=f"suggestion_gpt_{message.chat.id}-{message.message_id}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"suggestion_stay_{message.chat.id}-{message.message_id}"),
     )
     kb = builder.row(*prompt_buttons)
-    logger.debug(prompt)
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
 

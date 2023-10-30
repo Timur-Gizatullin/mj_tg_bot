@@ -9,6 +9,7 @@ from decouple import config
 from discord.message import Message
 from loguru import logger
 
+from main.enums import UserStateEnum
 from main.keyboards.commands import get_commands_keyboard
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -63,8 +64,10 @@ class DiscordMiddleWare(discord.Client):
             logger.debug("Message content is empty")
             return
 
+        user: User = await User.objects.get_user_by_chat_id(chat_id)
+
         if len(message.attachments) == 0:
-            await bot.send_message(chat_id=chat_id, text="Идет генерация... ⌛️")
+            await bot.send_message(chat_id=chat_id, text=f"Идет генерация... ⌛️\nБаланс в токенах: {user.balance}")
             return
 
         logger.debug("Send new_message message to telegram")
@@ -106,6 +109,8 @@ class DiscordMiddleWare(discord.Client):
 
         kb_links = await get_commands_keyboard("links")
         await bot.send_message(chat_id=chat_id, text="Может быть полезно:", reply_markup=kb_links)
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
 
 
 if __name__ == "__main__":

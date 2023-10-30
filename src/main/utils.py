@@ -44,3 +44,6 @@ class MenuState(StatesGroup):
     mj = State()
     gpt = State()
     dalle = State()
+
+
+callback_data_util = {}

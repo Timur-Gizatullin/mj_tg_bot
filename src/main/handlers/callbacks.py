@@ -1,6 +1,7 @@
 import os
 
 import django
+import langdetect
 import openai
 import requests
 from aiogram import Router, types
@@ -11,7 +12,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.enums import UserStateEnum
+from main.enums import AnswerTypeEnum, UserStateEnum
 from main.handlers.commands import bot, gpt
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
@@ -27,12 +28,19 @@ from main.handlers.utils.interactions import (
 from main.handlers.utils.wallet import get_pay_link
 from main.keyboards.commands import get_commands_keyboard
 from main.keyboards.pay import get_inline_keyboard_from_buttons
-from main.utils import MenuState
+from main.utils import MenuState, callback_data_util, is_has_censor
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import GptContext, Prompt, Referral, User  # noqa: E402
+from main.models import (  # noqa: E402
+    BanWord,
+    GptContext,
+    Prompt,
+    Referral,
+    TelegramAnswer,
+    User,
+)
 
 callback_router = Router()
 
@@ -150,7 +158,8 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
         "🪄Vary stable - вносит небольшие изменения в создоваемые вариации, приближает изображение к стандартным \n\n"
         "🔍Zoom out - масштабирует сгенерированную картинку,  дорисовывая объект и фон\n\n"
         "🔼Upscale -  увеличивает размер изображения, добавляя мельчайшие детали,"
-        " в 2 (2048х2048) и 4 рааза (4096х4096), стандартное изображение - 1024x1024."
+        " в 2 (2048х2048) и 4 рааза (4096х4096), стандартное изображение - 1024x1024.\n\n"
+        "⬅️⬆️⬇️➡️ расширяет изображение в указанную сторону, дорисовывая объект и фон"
     )
 
     await callback.message.answer(help_message)
@@ -394,25 +403,21 @@ async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
 
     if action == "mj":
         intro_message = (
-            "Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
-            "(Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане (моноширный)\n"
-            "❗️Порядок слов очень важен! Чем раньше слово, тем сильнее его вес;\n"
-            "Не нужно писать писать 'создай изображение', это ухудшит результат;\n"
-            "Для создания изображения на основании твоего или объеденения двух изображений, отправь картинку боту и "
-            "напиши промпт в комментарии к ней\n"
-            "Внимание!!! Строго запрещены запросы изображения 18+, "
-            "работает AI модератор, несоблюдение правил приведет е бану."
+            "🌆Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\nНапример:\n"
+            "`Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане`\n\n"
+            "❗Порядок слов очень важен! Чем раньше слово, тем сильнее его вес;\n"
+            "🛑 Не нужно писать  “создай изображение”, это ухудшит результат;\n\n"
+            "📌Для создания изображения на основании твоего или объединения двух изображений, отправь картинку боту и напиши промпт в комментарии к ней;\n\n"
+            "🔞Внимание!!! Строго запрещены запросы изображения 18+, работает AI модератор, несоблюдение правил приведет к бану!"
         )
-        await callback.message.answer(intro_message)
+        await callback.message.answer(intro_message, parse_mode=ParseMode.MARKDOWN)
         await state.set_state(MenuState.mj)
         await callback.answer()
         return
     if action == "dale":
         intro_message = (
-            "Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
-            "(Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане (моноширный)\n"
-            "Внимание!!! Строго запрещены запросы изображения 18+, "
-            "работает AI модератор, несоблюдение правил приведет е бану."
+            "🌆Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n\n"
+            "🔞Внимание!!! Строго запрещены запросы изображения 18+, работает AI модератор, несоблюдение правил приведет к бану!"
         )
 
         await callback.message.answer(intro_message)
@@ -519,13 +524,40 @@ async def pay_options_callback(callback: types.CallbackQuery):
 @callback_router.callback_query(lambda c: c.data.startswith("suggestion"))
 async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
-    prompt = callback.data.split("_")[-1]
-    prompt = prompt.replace(".", " ")
+    message_id = callback.data.split("_")[-1]
+    message = callback_data_util.get(message_id)
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if user.state == UserStateEnum.PENDING:
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
+        return
+
+    locale = langdetect.detect(message)
+    if locale == "en":
+        prompt = message
+    else:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional translator from Russian into English, "
+                    "everything that is said to you, you translate into English"
+                ),
+            },
+            {"role": "user", "content": message},
+        ]
+
+        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = prompt.choices[0].message.content
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message and await is_has_censor(prompt, ban_words):
+        await callback.message.answer(censor_message_answer)
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     user.state = UserStateEnum.PENDING
@@ -565,8 +597,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await callback.message.answer(
             text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
         )
-        await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
-        await callback.answer(cache_time=20)
+        await callback.message.answer(text=f"Баланс в токенах: {user.balance}")
+        await callback.answer(cache_time=200)
         return
     if action == "stay":
         if user.balance - 2 <= 0:
@@ -578,10 +610,9 @@ async def suggestion_callback(callback: types.CallbackQuery):
             await callback.answer()
             user.state = UserStateEnum.READY
             await user.asave()
-            return
 
         await imagine_trigger(callback.message, prompt)
-        await callback.answer(cache_time=20)
+        await callback.answer(cache_time=60)
 
         user.balance -= 2
         await user.asave()
@@ -592,13 +623,40 @@ async def suggestion_callback(callback: types.CallbackQuery):
 @callback_router.callback_query(lambda c: c.data.startswith("dalle"))
 async def dalle_suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[2]
-    prompt = callback.data.split("_")[-1]
-    prompt = prompt.replace(".", " ")
+    message_id = callback.data.split("_")[-1]
+    message = callback_data_util.get(message_id)
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if user.state == UserStateEnum.PENDING:
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
+        return
+
+    locale = langdetect.detect(message)
+    if locale == "en":
+        prompt = message
+    else:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional translator from Russian into English, "
+                    "everything that is said to you, you translate into English"
+                ),
+            },
+            {"role": "user", "content": message},
+        ]
+
+        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = prompt.choices[0].message.content
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message and await is_has_censor(prompt, ban_words):
+        await callback.message.answer(censor_message_answer)
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     user.state = UserStateEnum.PENDING
