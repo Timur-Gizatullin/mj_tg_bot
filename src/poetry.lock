@@ -844,6 +844,20 @@ yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=2.8.0)"]
 
 [[package]]
+name = "langdetect"
+version = "1.0.9"
+description = "Language detection library ported from Google's language-detection."
+optional = false
+python-versions = "*"
+files = [
+    {file = "langdetect-1.0.9-py2-none-any.whl", hash = "sha256:7cbc0746252f19e76f77c0b1690aadf01963be835ef0cd4b56dddf2a8f1dfc2a"},
+    {file = "langdetect-1.0.9.tar.gz", hash = "sha256:cbc1fef89f8d062739774bd51eda3da3274006b3661d199c2655f6b3f6d605a0"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "libretranslatepy"
 version = "2.1.1"
 description = "Python bindings for LibreTranslate API"
@@ -1875,4 +1889,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6f3686ef4317ffee0d2bdef6df9c14581bd8cf31b20a0c625109f3e088b17253"
+content-hash = "f41d9a25c83d8b4edc19dcea9b40d093986a28f3fa0d7f2cd790c7bf2ebfda40"

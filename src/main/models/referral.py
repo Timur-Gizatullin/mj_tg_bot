@@ -8,7 +8,7 @@ from main.models.user import User
 
 class ReferralManager(models.Manager):
     @sync_to_async()
-    def create_referral(self, referrer: User) -> str:
+    def create_referral(self, referrer: User) -> "Referral":
         key = str(uuid4())
         new_referral = Referral(referrer=referrer, key=key)
         new_referral.save()
@@ -24,6 +24,7 @@ class ReferralManager(models.Manager):
         referral = self.filter(key=referral_key).first()
 
         referral.referrer.generations_count += 6
+        referral.used_count += 1
         referral.referrer.save()
 
     @sync_to_async()

@@ -37,6 +37,15 @@ async def callbacks_variations(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if telegram_user.balance - 2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     if action == "V1":
         await queue_handler.add_task(
             send_variation_trigger, variation_index="1", queue=queue, user_role=telegram_user.role
@@ -52,6 +61,9 @@ async def callbacks_variations(callback: types.CallbackQuery):
             send_variation_trigger, variation_index="4", queue=queue, user_role=telegram_user.role
         )
 
+    telegram_user.balance -= 2
+    await telegram_user.asave()
+
     await callback.answer()
 
 
@@ -63,10 +75,26 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if action == "2x":
+        cost = 4
+    else:
+        cost = 8
+
+    if telegram_user.balance - cost <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     await queue_handler.add_task(
         send_upsample_trigger, upsample_index="1", queue=queue, version=action, user_role=telegram_user.role
     )
 
+    telegram_user.balance -= cost
+    await telegram_user.asave()
 
 @callback_router.callback_query(lambda c: c.data.startswith("U"))
 async def callbacks_upsamples(callback: types.CallbackQuery):
@@ -75,6 +103,15 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
 
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
+
+    if telegram_user.balance-2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
 
     help_message = (
         "🪄Vary Strong - вносит больше изменений в создаваемые вариации, увеличивает урвоень художественности и "
@@ -104,6 +141,9 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
             send_upsample_trigger, upsample_index="4", queue=queue, user_role=telegram_user.role
         )
 
+    telegram_user.balance -= 2
+    await telegram_user.asave()
+
     await callback.answer()
 
 
@@ -114,12 +154,24 @@ async def callback_reset(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if telegram_user.balance-2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     await queue_handler.add_task(
         send_reset_trigger,
         message_id=queue.discord_message_id,
         message_hash=queue.message_hash,
         user_role=telegram_user.role,
     )
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
 
     await callback.answer()
 
@@ -132,6 +184,15 @@ async def callback_vary(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if telegram_user.balance-2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     if action == "strong":
         await queue_handler.add_task(
             send_vary_trigger, vary_type="high_variation", queue=queue, user_role=telegram_user.role
@@ -140,6 +201,9 @@ async def callback_vary(callback: types.CallbackQuery):
         await queue_handler.add_task(
             send_vary_trigger, vary_type="low_variation", queue=queue, user_role=telegram_user.role
         )
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
 
     await callback.answer()
 
@@ -152,10 +216,22 @@ async def callback_zoom(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if telegram_user.balance-2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     if action == "2":
         await queue_handler.add_task(send_zoom_trigger, queue=queue, zoomout=1, user_role=telegram_user.role)
     elif action == "1.5":
         await queue_handler.add_task(send_zoom_trigger, queue=queue, zoomout=action, user_role=telegram_user.role)
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
 
     await callback.answer()
 
@@ -168,7 +244,19 @@ async def callback_pan(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
+    if telegram_user.balance-2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     await queue_handler.add_task(send_pan_trigger, queue=queue, direction=action, user_role=telegram_user.role)
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
 
     await callback.answer()
 
@@ -207,6 +295,15 @@ async def callbacks_describe(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
 
+    if telegram_user.balance <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
     if callback.data != "reset" and action != "all":
         prompt = callback.message.caption.split("\n\n")[int(action)]
         logger.debug(callback.message.caption)
@@ -217,6 +314,11 @@ async def callbacks_describe(callback: types.CallbackQuery):
         )
     elif callback.data == "reset":
         await describe_reset_trigger(message_id=telegram_user.chat_id)
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
+
+    await callback.answer()
 
 
 # Common
@@ -229,13 +331,13 @@ async def menu_start_callback(callback: types.CallbackQuery):
 
     if action == "mj":
         intro_message = (
-            "● Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
+            "Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
             "(Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане (моноширный)\n"
             "❗️Порядок слов очень важен! Чем раньше слово, тем сильнее его вес;\n"
-            "● Не нужно писать писать 'создай изображение', это ухудшит результат;\n"
+            "Не нужно писать писать 'создай изображение', это ухудшит результат;\n"
             "Для создания изображения на основании твоего или объеденения двух изображений, отправь картинку боту и "
             "напиши промпт в комментарии к ней\n"
-            "● Внимание!!! Строго запрещены запросы изображения 18+, "
+            "Внимание!!! Строго запрещены запросы изображения 18+, "
             "работает AI модератор, несоблюдение правил приведет е бану."
         )
 
@@ -368,11 +470,11 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await callback.message.answer(text=prompt_suggestions.choices[0].message.content,
                                       reply_markup=builder.as_markup())
         await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
-        await callback.answer()
+        await callback.answer(cache_time=20)
         return
     if action == "stay":
         await imagine_trigger(callback.message, prompt)
-        await callback.answer()
+        await callback.answer(cache_time=20)
         return
 
 
@@ -387,7 +489,25 @@ async def gpt_callback(callback: types.CallbackQuery):
 @callback_router.callback_query(lambda c: c.data.startswith("choose-gpt"))
 async def gpt_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
+    telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    prompt = callback.message.text.split("\n\n")[choose - 1][2:]
+    if telegram_user.balance <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
+    try:
+        prompt = callback.message.text.split("\n\n")[choose - 1][2:]
+    except Exception:
+        prompt = callback.message.text.split("\n")[choose - 1][2:]
 
     await imagine_trigger(message=callback.message, prompt=prompt)
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
+
+    await callback.answer()

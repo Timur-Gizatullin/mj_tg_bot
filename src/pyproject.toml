@@ -28,6 +28,7 @@ gunicorn = "^21.2.0"
 whitenoise = "^6.6.0"
 translate = "^3.6.1"
 aiogram-media-group = "^0.5.1"
+langdetect = "^1.0.9"
 
 
 [tool.poetry.group.dev.dependencies]

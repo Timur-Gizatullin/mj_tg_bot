@@ -1,3 +1,4 @@
+import langdetect
 import openai
 import requests
 from aiogram import Bot, Dispatcher, types
@@ -18,7 +19,6 @@ from main.handlers.utils.interactions import (
     mj_user_token_queue,
 )
 from main.keyboards.commands import get_commands_keyboard
-from main.keyboards.pay import get_pay_keyboard
 from main.models import (
     BanWord,
     Blend,
@@ -77,8 +77,6 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
     existing_user: User = await User.objects.get_user_by_username(username=message.from_user.username)
-    a: User = await User.objects.aget(pk=1)
-    await a.adelete()
 
     if not existing_user:
         await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
@@ -133,11 +131,22 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         await message.answer("Напишите боту /start")
         return
 
-    prompt = translator.translate(command.args)
-
-    if prompt == "":
+    if command.args == "":
         await message.answer("Добавьте описание")
         return
+
+    locale = langdetect.detect(command.args)
+    if locale == "en":
+        prompt = command.args
+    else:
+        messages = [
+            {"role": "system",
+             "content": "You are a professional translator from Russian into English, everything that is said to you, you translate into English"},
+            {"role": "user", "content": command.args}
+        ]
+
+        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = prompt.choices[0].message.content
 
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
@@ -159,7 +168,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
         types.InlineKeyboardButton(text="Оставить мой", callback_data=f"suggestion_stay_{prompt}"),
     )
     kb = builder.row(*prompt_buttons)
-
+    logger.debug(prompt)
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
@@ -207,6 +216,9 @@ async def gpt_handler(message: types.Message, state, command: CommandObject):
     if len(gpt_contexts) >= 15:
         await GptContext.objects.delete_gpt_contexts(gpt_contexts)
         await message.answer("Контекст очищен")
+
+    user.balance -= 1
+    await user.asave()
 
 
 @dp.message(Command("describe"))
