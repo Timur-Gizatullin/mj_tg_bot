@@ -11,7 +11,7 @@ from decouple import config
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.enums import AnswerTypeEnum
+from main.enums import AnswerTypeEnum, UserStateEnum
 from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
@@ -28,7 +28,13 @@ from main.models import (
     TelegramAnswer,
     User,
 )
-from main.utils import BlendStateMachine, is_has_censor, put_file, upload_file, MenuState
+from main.utils import (
+    BlendStateMachine,
+    MenuState,
+    is_has_censor,
+    put_file,
+    upload_file,
+)
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -121,10 +127,17 @@ async def mj_handler(message: Message) -> None:
         await message.answer("Напишите боту /start")
         return
 
+    if user.state == UserStateEnum.PENDING:
+        await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+
+    user.state = UserStateEnum.PENDING
+    await user.asave()
+
     if message.text and not message.photo and not message.media_group_id:
-        await handle_imagine(message)
+        await handle_imagine(message, user)
     elif message.photo and not message.text and not message.media_group_id:
-        await describe_handler(message)
+        await describe_handler(message, user)
     elif message.media_group_id and not message.text and not message.photo:
         await blend_images_handler(message)
 
@@ -135,6 +148,13 @@ async def gpt_handler(message: types.Message):
     if not user:
         await message.answer("Напишите боту /start")
         return
+
+    if user.state == UserStateEnum.PENDING:
+        await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+
+    user.state = UserStateEnum.PENDING
+    await user.asave()
 
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
@@ -159,6 +179,8 @@ async def gpt_handler(message: types.Message):
         gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
     except Exception as e:
         logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
+        user.state = UserStateEnum.READY
+        await user.asave()
         await message.answer("ChatGPT временно не доступен, попробуйте позже")
         return
 
@@ -166,6 +188,8 @@ async def gpt_handler(message: types.Message):
     builder.row(types.InlineKeyboardButton(text="сбросить контекст", callback_data="gpt"))
 
     await answer.edit_text(gpt_answer.choices[0].message.content, reply_markup=builder.as_markup())
+
+    user.state = UserStateEnum.READY
 
     if len(gpt_contexts) >= 15:
         await GptContext.objects.delete_gpt_contexts(gpt_contexts)
@@ -188,17 +212,28 @@ async def blend_state_handler(message: Message, state: FSMContext):
     await blend_trigger(blends)
     await state.set_state(MenuState.mj)
 
+    user.state = UserStateEnum.READY
+    await user.asave()
+
 
 @dp.message(MenuState.dalle)
-async def dale_handler(message: Message, state: FSMContext):
-    await state.clear()
-
-    if not await is_user_exist(chat_id=str(message.chat.id)):
+async def dale_handler(message: Message):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
         await message.answer("Напишите боту /start")
         return
 
+    if user.state == UserStateEnum.PENDING:
+        await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+
+    user.state = UserStateEnum.PENDING
+    await user.asave()
+
     if message.text == "":
         await message.answer("Добавьте описание")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     locale = langdetect.detect(message.text)
@@ -224,6 +259,8 @@ async def dale_handler(message: Message, state: FSMContext):
 
     if message.text and await is_has_censor(prompt, ban_words):
         await message.answer(censor_message_answer)
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     prompt = prompt.replace(" ", ".")
@@ -244,6 +281,9 @@ async def dale_handler(message: Message, state: FSMContext):
     logger.debug(prompt)
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
+    user.state = UserStateEnum.READY
+    await user.asave()
+
 
 @dp.message()
 async def handle_any(message: Message, state):
@@ -256,7 +296,7 @@ async def handle_any(message: Message, state):
     await help_handler(message, state)
 
 
-async def handle_imagine(message):
+async def handle_imagine(message, user):
     locale = langdetect.detect(message.text)
     if locale == "en":
         prompt = message.text
@@ -280,6 +320,8 @@ async def handle_imagine(message):
 
     if message.text and await is_has_censor(prompt, ban_words):
         await message.answer(censor_message_answer)
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     prompt = prompt.replace(" ", ".")
@@ -304,23 +346,25 @@ async def blend_images_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
     if not user:
         await message.answer("Напишите боту /start")
+        user.state = UserStateEnum.PENDING
+        await user.asave()
         return
 
     if message.text and message.text.startswith("отмена"):
         await message.answer("Отмена прошла успешна")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
     if message.text and message.text.startswith("перемешать"):
         await blend_state_handler(message)
+        user.state = UserStateEnum.PENDING
+        await user.asave()
         return
 
     if not message.photo:
-        await message.answer(
-            (
-                f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` "
-                f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
-            ),
-            parse_mode=ParseMode.MARKDOWN,
-        )
+        await message.answer("Пожалуйста, прикрепите от двух до 4 фотографий и напишите")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
@@ -352,7 +396,7 @@ async def blend_images_handler(message: Message):
     await message.answer("фото загружено")
 
 
-async def describe_handler(message: Message):
+async def describe_handler(message: Message, user: User):
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
     token = await mj_user_token_queue.get_sender_token()
@@ -361,10 +405,14 @@ async def describe_handler(message: Message):
     attachment = await upload_file(file=file, header=header)
     if not attachment:
         await message.answer("Не удалось загрузить файл")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
         await message.answer("Не удалось загрузить файл")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     upload_filename = attachment["upload_filename"]
@@ -390,6 +438,8 @@ async def describe_handler(message: Message):
     if not requests.post(INTERACTION_URL, json=payload, headers=header).ok:
         logger.error("Check out ds version")
         await message.answer("Что-то пошло не так")
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))

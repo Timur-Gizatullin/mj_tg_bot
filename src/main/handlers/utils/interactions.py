@@ -40,7 +40,7 @@ async def send_variation_trigger(variation_index: str, queue: Prompt) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
 async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str = "") -> int:

@@ -11,6 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
+from main.enums import UserStateEnum
 from main.handlers.commands import bot, gpt
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
@@ -52,6 +53,14 @@ async def callbacks_variations(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+    await telegram_user.asave()
 
     if action == "V1":
         await queue_handler.add_task(
@@ -96,6 +105,13 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
         await callback.answer()
         return
 
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+
     await queue_handler.add_task(
         send_upsample_trigger, upsample_index="1", queue=queue, version=action, user_role=telegram_user.role
     )
@@ -120,6 +136,13 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
 
     help_message = (
         "🪄Vary Strong - вносит больше изменений в создаваемые вариации, увеличивает урвоень художественности и "
@@ -171,6 +194,13 @@ async def callback_reset(callback: types.CallbackQuery):
         await callback.answer()
         return
 
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+
     await queue_handler.add_task(
         send_reset_trigger,
         message_id=queue.discord_message_id,
@@ -200,6 +230,14 @@ async def callback_vary(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+    await telegram_user.asave()
 
     if action == "strong":
         await queue_handler.add_task(
@@ -233,6 +271,13 @@ async def callback_zoom(callback: types.CallbackQuery):
         await callback.answer()
         return
 
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+
     if action == "2":
         await queue_handler.add_task(send_zoom_trigger, queue=queue, zoomout=1, user_role=telegram_user.role)
     elif action == "1.5":
@@ -260,6 +305,13 @@ async def callback_pan(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
 
     await queue_handler.add_task(send_pan_trigger, queue=queue, direction=action, user_role=telegram_user.role)
 
@@ -307,6 +359,13 @@ async def callbacks_describe(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
 
     if callback.data != "reset" and action != "all":
         prompt = callback.message.caption.split("\n\n")[int(action)]
@@ -464,6 +523,14 @@ async def suggestion_callback(callback: types.CallbackQuery):
     prompt = prompt.replace(".", " ")
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
+    if user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    user.state = UserStateEnum.PENDING
+    await user.asave()
+
     if action == "gpt":
         if user.balance - 1 <= 0:
             builder = InlineKeyboardBuilder()
@@ -492,6 +559,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
         builder.row(*buttons)
 
         user.balance -= 1
+        user.state = UserStateEnum.READY
         await user.asave()
 
         await callback.message.answer(
@@ -508,6 +576,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
             builder.row(*lk_buttons)
             await callback.message.answer(answer, reply_markup=builder.as_markup())
             await callback.answer()
+            user.state = UserStateEnum.READY
+            await user.asave()
             return
 
         await imagine_trigger(callback.message, prompt)
@@ -525,6 +595,14 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     prompt = callback.data.split("_")[-1]
     prompt = prompt.replace(".", " ")
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
+
+    if user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    user.state = UserStateEnum.PENDING
+    await user.asave()
 
     if action == "gpt":
         if user.balance - 1 <= 0:
@@ -556,6 +634,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         builder.row(*buttons)
 
         user.balance -= 1
+        user.state = UserStateEnum.READY
         await user.asave()
 
         await callback.message.answer(
@@ -575,19 +654,21 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             return
 
         img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
-        img_link = img_data["data"][0]["url"]
-        raw_image = requests.get(img_link).content
-        img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-        await bot.send_photo(
-            chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
-        )
+        img_links = img_data["data"]
+        for img_link in img_links:
+            raw_image = requests.get(img_link["url"]).content
+            img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+            await bot.send_photo(
+                chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+            )
         kb_links = await get_commands_keyboard("links")
         await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 
         user.balance -= 2
+        user.state = UserStateEnum.READY
         await user.asave()
 
-        await callback.answer(cache_time=30)
+        await callback.answer(cache_time=60)
         return
 
 
@@ -612,6 +693,14 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
         return
+
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+    await telegram_user.asave()
 
     try:
         prompt = callback.message.text.split("\n\n")[choose - 1][2:]
@@ -640,22 +729,33 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         await callback.answer()
         return
 
+    if telegram_user.state == UserStateEnum.PENDING:
+        await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        await callback.answer()
+        return
+
+    telegram_user.state = UserStateEnum.PENDING
+    await telegram_user.asave()
+
     try:
         prompt = callback.message.text.split("\n\n")[choose - 1][2:]
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
     img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
-    img_link = img_data["data"][0]["url"]
-    raw_image = requests.get(img_link).content
-    img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-    await bot.send_photo(
-        chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
-    )
+    img_links = img_data["data"]
+    for img_link in img_links:
+        raw_image = requests.get(img_link["url"]).content
+        img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+        await bot.send_photo(
+            chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+        )
+
     kb_links = await get_commands_keyboard("links")
     await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 
     telegram_user.balance -= 2
+    telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
 
-    await callback.answer(cache_time=40)
+    await callback.answer(cache_time=60)
