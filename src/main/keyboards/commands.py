@@ -12,25 +12,23 @@ start_buttons = (
 link_buttons = (
     types.InlineKeyboardButton(
         text="Инструкции, лайфхаки, настройки, стили, ракурсы, промпты",
-        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+        url="https://t.me/MidjourneyFAQ/5",
     ),
-    types.InlineKeyboardButton(
-        text="Чат технической поддержки", url="https://www.searchenginejournal.com/alternative-search-engines/271409/"
-    ),
+    types.InlineKeyboardButton(text="Чат технической поддержки", url="https://t.me/Midjourneybot_chat"),
     types.InlineKeyboardButton(
         text="Наш сайт с огромной базой информации и регулярными обновлениями",
-        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+        url="https://midjourneypromt.com",
     ),
 )
 
 example_buttons = (
     types.InlineKeyboardButton(
         text="Примеры изображений сгенерированных нашим ботом",
-        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+        url="https://t.me/Midjo_art",
     ),
     types.InlineKeyboardButton(
         text="Примеры изображений в стиле Cyber Punk",
-        url="https://www.searchenginejournal.com/alternative-search-engines/271409/",
+        url="https://t.me/artcyberpunk",
     ),
 )
 

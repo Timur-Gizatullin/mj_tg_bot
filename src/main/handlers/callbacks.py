@@ -10,7 +10,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.handlers.commands import gpt, bot
+from main.handlers.commands import bot, gpt
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
     describe_reset_trigger,
@@ -498,7 +498,6 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await callback.answer(cache_time=20)
         return
     if action == "stay":
-
         if user.balance - 2 <= 0:
             builder = InlineKeyboardBuilder()
             answer = f"Ваш баланс {user.balance}\n"
@@ -548,8 +547,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
-        buttons = [types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-dalle-gpt_{i}") for i in
-                   range(1, 4)]
+        buttons = [
+            types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-dalle-gpt_{i}") for i in range(1, 4)
+        ]
         builder.row(*buttons)
 
         user.balance -= 1
@@ -575,8 +575,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         img_link = img_data["data"][0]["url"]
         raw_image = requests.get(img_link).content
         img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-        await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`",
-                             parse_mode=ParseMode.MARKDOWN)
+        await bot.send_photo(
+            chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+        )
         kb_links = await get_commands_keyboard("links")
         await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 
@@ -623,7 +624,7 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("choose-dalle-gpt"))
-async def gpt_choose_callback(callback: types.CallbackQuery):
+async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
@@ -645,8 +646,9 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     img_link = img_data["data"][0]["url"]
     raw_image = requests.get(img_link).content
     img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-    await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`",
-                         parse_mode=ParseMode.MARKDOWN)
+    await bot.send_photo(
+        chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+    )
     kb_links = await get_commands_keyboard("links")
     await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 

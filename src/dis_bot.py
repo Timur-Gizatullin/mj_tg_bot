@@ -64,7 +64,7 @@ class DiscordMiddleWare(discord.Client):
             return
 
         if len(message.attachments) == 0:
-            await bot.send_message(chat_id=chat_id, text=f"Идет генерация... ⌛️")
+            await bot.send_message(chat_id=chat_id, text="Идет генерация... ⌛️")
             return
 
         logger.debug("Send new_message message to telegram")
