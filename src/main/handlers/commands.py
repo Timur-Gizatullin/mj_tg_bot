@@ -150,7 +150,7 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
-    if message.text and await is_has_censor(prompt, ban_words):  # TODO исправить
+    if message.text and await is_has_censor(prompt, ban_words):
         await message.answer(censor_message_answer)
         return
 
@@ -351,6 +351,60 @@ async def blend_state_handler(message: Message, state: FSMContext):
 
     await blend_trigger(blends)
     await state.clear()
+
+
+@dp.message(Command("dalle"))
+async def dale_handler(message: Message, state, command):
+    await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
+    if command.args == "":
+        await message.answer("Добавьте описание")
+        return
+
+    locale = langdetect.detect(command.args)
+    if locale == "en":
+        prompt = command.args
+    else:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional translator from Russian into English, "
+                    "everything that is said to you, you translate into English"
+                ),
+            },
+            {"role": "user", "content": command.args},
+        ]
+
+        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = prompt.choices[0].message.content
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message.text and await is_has_censor(prompt, ban_words):
+        await message.answer(censor_message_answer)
+        return
+
+    prompt = prompt.replace(" ", ".")
+
+    suggestion = (
+        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
+        "(Стоимость 1 токен)"
+    )
+
+    builder = InlineKeyboardBuilder()
+    prompt_buttons = (
+        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"dalle_suggestion_gpt_{prompt}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{prompt}"),
+    )
+    kb = builder.row(*prompt_buttons)
+    logger.debug(prompt)
+    await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
 @dp.message()

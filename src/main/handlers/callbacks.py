@@ -1,12 +1,16 @@
 import os
 
 import django
+import openai
+import requests
 from aiogram import Router, types
+from aiogram.enums import ParseMode
+from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.handlers.commands import gpt
+from main.handlers.commands import gpt, bot
 from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
     describe_reset_trigger,
@@ -19,6 +23,7 @@ from main.handlers.utils.interactions import (
     send_zoom_trigger,
 )
 from main.handlers.utils.wallet import get_pay_link
+from main.keyboards.commands import get_commands_keyboard
 from main.keyboards.pay import get_inline_keyboard_from_buttons
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -343,7 +348,14 @@ async def menu_start_callback(callback: types.CallbackQuery):
         await callback.answer()
         return
     if action == "dale":
-        pass
+        intro_message = (
+            "Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n"
+            "(Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане (моноширный)\n"
+            "Внимание!!! Строго запрещены запросы изображения 18+, "
+            "работает AI модератор, несоблюдение правил приведет е бану."
+        )
+
+        await callback.message.answer(intro_message)
         await callback.answer()
         return
     if action == "gpt":
@@ -447,8 +459,18 @@ async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     prompt = callback.data.split("_")[-1]
     prompt = prompt.replace(".", " ")
+    user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if action == "gpt":
+        if user.balance - 1 <= 0:
+            builder = InlineKeyboardBuilder()
+            answer = f"Ваш баланс {user.balance}\n"
+            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+            builder.row(*lk_buttons)
+            await callback.message.answer(answer, reply_markup=builder.as_markup())
+            await callback.answer()
+            return
+
         messages = [
             {
                 "role": "system",
@@ -459,8 +481,6 @@ async def suggestion_callback(callback: types.CallbackQuery):
             },
             {"role": "user", "content": prompt},
         ]
-
-        user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
@@ -478,8 +498,92 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await callback.answer(cache_time=20)
         return
     if action == "stay":
+
+        if user.balance - 2 <= 0:
+            builder = InlineKeyboardBuilder()
+            answer = f"Ваш баланс {user.balance}\n"
+            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+            builder.row(*lk_buttons)
+            await callback.message.answer(answer, reply_markup=builder.as_markup())
+            await callback.answer()
+            return
+
         await imagine_trigger(callback.message, prompt)
         await callback.answer(cache_time=20)
+
+        user.balance -= 2
+        await user.asave()
+
+        return
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("dalle"))
+async def dalle_suggestion_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[2]
+    prompt = callback.data.split("_")[-1]
+    prompt = prompt.replace(".", " ")
+    user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
+
+    if action == "gpt":
+        if user.balance - 1 <= 0:
+            builder = InlineKeyboardBuilder()
+            answer = f"Ваш баланс {user.balance}\n"
+            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+            builder.row(*lk_buttons)
+            await callback.message.answer(answer, reply_markup=builder.as_markup())
+            await callback.answer()
+            return
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an prompt assistant, skilled at making prompt for "
+                    "Mid Journey better. You always give 3 options"
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ]
+
+        prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+
+        builder = InlineKeyboardBuilder()
+        buttons = [types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-dalle-gpt_{i}") for i in
+                   range(1, 4)]
+        builder.row(*buttons)
+
+        user.balance -= 1
+        await user.asave()
+
+        await callback.message.answer(
+            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
+        )
+        await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
+        await callback.answer(cache_time=20)
+        return
+    if action == "stay":
+        if user.balance - 2 <= 0:
+            builder = InlineKeyboardBuilder()
+            answer = f"Ваш баланс {user.balance}\n"
+            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+            builder.row(*lk_buttons)
+            await callback.message.answer(answer, reply_markup=builder.as_markup())
+            await callback.answer()
+            return
+
+        img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+        img_link = img_data["data"][0]["url"]
+        raw_image = requests.get(img_link).content
+        img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+        await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`",
+                             parse_mode=ParseMode.MARKDOWN)
+        kb_links = await get_commands_keyboard("links")
+        await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
+
+        user.balance -= 2
+        await user.asave()
+
+        await callback.answer(cache_time=30)
         return
 
 
@@ -516,3 +620,37 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     await telegram_user.asave()
 
     await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("choose-dalle-gpt"))
+async def gpt_choose_callback(callback: types.CallbackQuery):
+    choose = int(callback.data.split("_")[1])
+    telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
+
+    if telegram_user.balance - 2 <= 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {telegram_user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
+    try:
+        prompt = callback.message.text.split("\n\n")[choose - 1][2:]
+    except Exception:
+        prompt = callback.message.text.split("\n")[choose - 1][2:]
+
+    img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+    img_link = img_data["data"][0]["url"]
+    raw_image = requests.get(img_link).content
+    img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+    await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`",
+                         parse_mode=ParseMode.MARKDOWN)
+    kb_links = await get_commands_keyboard("links")
+    await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
+
+    telegram_user.balance -= 2
+    await telegram_user.asave()
+
+    await callback.answer(cache_time=40)
