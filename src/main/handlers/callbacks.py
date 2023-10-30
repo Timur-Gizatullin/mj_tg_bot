@@ -5,6 +5,7 @@ import openai
 import requests
 from aiogram import Router, types
 from aiogram.enums import ParseMode
+from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
@@ -25,6 +26,7 @@ from main.handlers.utils.interactions import (
 from main.handlers.utils.wallet import get_pay_link
 from main.keyboards.commands import get_commands_keyboard
 from main.keyboards.pay import get_inline_keyboard_from_buttons
+from main.utils import MenuState
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -281,10 +283,9 @@ async def callback_pay(callback: types.CallbackQuery):
         pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
 
         if not pay_link:
-            pay_link = "https://docs.wallet.tg/pay/#section/Get-started"
-        #     await callback.message.answer("Что-то пошло не так :(")
-        #     await callback.answer()
-        #     return
+            await callback.message.answer("Что-то пошло не так :(")
+            await callback.answer()
+            return
 
         pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
         key_board = get_inline_keyboard_from_buttons((pay_button,))
@@ -328,7 +329,7 @@ async def callbacks_describe(callback: types.CallbackQuery):
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("start"))
-async def menu_start_callback(callback: types.CallbackQuery):
+async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
     action = callback.data.split("_")[1]
     current_user: User = await User.objects.get_user_by_chat_id(str(callback.message.chat.id))
 
@@ -343,8 +344,8 @@ async def menu_start_callback(callback: types.CallbackQuery):
             "Внимание!!! Строго запрещены запросы изображения 18+, "
             "работает AI модератор, несоблюдение правил приведет е бану."
         )
-
         await callback.message.answer(intro_message)
+        await state.set_state(MenuState.mj)
         await callback.answer()
         return
     if action == "dale":
@@ -356,6 +357,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
         )
 
         await callback.message.answer(intro_message)
+        await state.set_state(MenuState.dalle)
         await callback.answer()
         return
     if action == "gpt":
@@ -366,6 +368,7 @@ async def menu_start_callback(callback: types.CallbackQuery):
             "укажите что с ним необходимо сделать в комментарии"
         )
         await callback.message.answer(answer)
+        await state.set_state(MenuState.gpt)
         await callback.answer()
         return
     if action == "lk":

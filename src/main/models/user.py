@@ -5,7 +5,7 @@ from django.contrib.auth.models import UserManager as AbstractUserManager
 from django.db import models
 from django.db.models import QuerySet
 
-from main.enums import UserRoleEnum
+from main.enums import UserRoleEnum, UserStateEnum
 
 
 class UserManager(AbstractUserManager):
@@ -54,6 +54,7 @@ class User(AbstractUser):
     chat_id: str = models.IntegerField(unique=True, null=True)
     balance: int = models.IntegerField(null=False, default=10)
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
+    state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE)
     password = models.CharField(blank=True)
 
     objects = UserManager()

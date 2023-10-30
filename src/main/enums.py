@@ -17,3 +17,8 @@ class UserRoleEnum(BaseStrEnum):
     ADMIN = "ADMIN"
     PREMIUM = "PREMIUM"
     BASE = "BASE"
+
+
+class UserStateEnum(BaseStrEnum):
+    PENDING = "PENDING"
+    READY = "READY"

@@ -38,3 +38,9 @@ async def put_file(attachment, downloaded_file):
 class BlendStateMachine(StatesGroup):
     image = State()
     blend = State()
+
+
+class MenuState(StatesGroup):
+    mj = State()
+    gpt = State()
+    dalle = State()

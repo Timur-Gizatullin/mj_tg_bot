@@ -28,7 +28,7 @@ from main.models import (
     TelegramAnswer,
     User,
 )
-from main.utils import BlendStateMachine, is_has_censor, put_file, upload_file
+from main.utils import BlendStateMachine, is_has_censor, put_file, upload_file, MenuState
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
@@ -90,8 +90,6 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
 @dp.message(Command("help"))
 async def help_handler(message: Message, state) -> None:
-    await state.clear()
-
     if not await is_user_exist(chat_id=str(message.chat.id)):
         await message.answer("Напишите боту /start")
         return
@@ -103,8 +101,6 @@ async def help_handler(message: Message, state) -> None:
 
 @dp.message(Command("referral"))
 async def create_referral(message: Message, state) -> None:
-    await state.clear()
-
     if not await is_user_exist(chat_id=str(message.chat.id)):
         await message.answer("Напишите боту /start")
         return
@@ -117,21 +113,97 @@ async def create_referral(message: Message, state) -> None:
     await message.answer(f"Ваша ссылка: {referral_link}")
 
 
-@dp.message(Command("imagine"))
-async def imagine_handler(message: Message, state, command: CommandObject) -> None:
+@dp.message(MenuState.mj)
+async def mj_handler(message: Message) -> None:
+    user = await is_user_exist(chat_id=str(message.chat.id))
+
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    if message.text and not message.photo and not message.media_group_id:
+        await handle_imagine(message)
+    elif message.photo and not message.text and not message.media_group_id:
+        await describe_handler(message)
+    elif message.media_group_id and not message.text and not message.photo:
+        await blend_images_handler(message)
+
+
+@dp.message(MenuState.gpt)
+async def gpt_handler(message: types.Message):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message.text and await is_has_censor(message.text, ban_words):
+        await message.answer(censor_message_answer)
+        return
+
+    new_gpt_context = GptContext(user=user, role="user", content=message.text, telegram_chat_id=message.chat.id)
+    await new_gpt_context.asave()
+
+    gpt_contexts: list[GptContext] = await GptContext.objects.get_gpt_contexts_by_telegram_chat_id(
+        telegram_chat_id=message.chat.id
+    )
+    messages = []
+    for gpt_context in gpt_contexts:
+        gpt_message = {"role": gpt_context.role, "content": gpt_context.content}
+        messages.append(gpt_message)
+
+    try:
+        answer = await message.answer("GPT думает ...")
+        gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+    except Exception as e:
+        logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
+        await message.answer("ChatGPT временно не доступен, попробуйте позже")
+        return
+
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="сбросить контекст", callback_data="gpt"))
+
+    await answer.edit_text(gpt_answer.choices[0].message.content, reply_markup=builder.as_markup())
+
+    if len(gpt_contexts) >= 15:
+        await GptContext.objects.delete_gpt_contexts(gpt_contexts)
+        await message.answer("Контекст очищен")
+
+    user.balance -= 1
+    await user.asave()
+
+
+@dp.message(BlendStateMachine.blend)
+async def blend_state_handler(message: Message, state: FSMContext):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    group_id = message.text.split(" ")[-1]
+    blends = await Blend.objects.get_blends_by_group_id(group_id)
+
+    await blend_trigger(blends)
+    await state.set_state(MenuState.mj)
+
+
+@dp.message(MenuState.dalle)
+async def dale_handler(message: Message, state: FSMContext):
     await state.clear()
 
     if not await is_user_exist(chat_id=str(message.chat.id)):
         await message.answer("Напишите боту /start")
         return
 
-    if command.args == "":
+    if message.text == "":
         await message.answer("Добавьте описание")
         return
 
-    locale = langdetect.detect(command.args)
+    locale = langdetect.detect(message.text)
     if locale == "en":
-        prompt = command.args
+        prompt = message.text
     else:
         messages = [
             {
@@ -141,7 +213,63 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
                     "everything that is said to you, you translate into English"
                 ),
             },
-            {"role": "user", "content": command.args},
+            {"role": "user", "content": message.text},
+        ]
+
+        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = prompt.choices[0].message.content
+
+    ban_words = await BanWord.objects.get_active_ban_words()
+    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
+
+    if message.text and await is_has_censor(prompt, ban_words):
+        await message.answer(censor_message_answer)
+        return
+
+    prompt = prompt.replace(" ", ".")
+    if prompt[-1] in (".", "!", "?"):
+        prompt = prompt[:-1]
+
+    suggestion = (
+        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
+        "(Стоимость 1 токен)"
+    )
+
+    builder = InlineKeyboardBuilder()
+    prompt_buttons = (
+        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"dalle_suggestion_gpt_{prompt}"),
+        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{prompt}"),
+    )
+    kb = builder.row(*prompt_buttons)
+    logger.debug(prompt)
+    await message.answer(suggestion, reply_markup=kb.as_markup())
+
+
+@dp.message()
+async def handle_any(message: Message, state):
+    await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
+    await help_handler(message, state)
+
+
+async def handle_imagine(message):
+    locale = langdetect.detect(message.text)
+    if locale == "en":
+        prompt = message.text
+    else:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional translator from Russian into English, "
+                    "everything that is said to you, you translate into English"
+                ),
+            },
+            {"role": "user", "content": message.text},
         ]
 
         prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
@@ -171,63 +299,60 @@ async def imagine_handler(message: Message, state, command: CommandObject) -> No
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
-@dp.message(Command("gpt"))
-async def gpt_handler(message: types.Message, state, command: CommandObject):
-    await state.clear()
-
+@dp.message(BlendStateMachine.image)
+async def blend_images_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
     if not user:
         await message.answer("Напишите боту /start")
         return
 
-    prompt = command.args
-
-    ban_words = await BanWord.objects.get_active_ban_words()
-    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
-
-    if message.text and await is_has_censor(prompt, ban_words):
-        await message.answer(censor_message_answer)
+    if message.text and message.text.startswith("отмена"):
+        await message.answer("Отмена прошла успешна")
         return
-
-    new_gpt_context = GptContext(user=user, role="user", content=prompt, telegram_chat_id=message.chat.id)
-    await new_gpt_context.asave()
-
-    gpt_contexts: list[GptContext] = await GptContext.objects.get_gpt_contexts_by_telegram_chat_id(
-        telegram_chat_id=message.chat.id
-    )
-    messages = []
-    for gpt_context in gpt_contexts:
-        gpt_message = {"role": gpt_context.role, "content": gpt_context.content}
-        messages.append(gpt_message)
-
-    try:
-        gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
-    except Exception as e:
-        logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
-        await message.answer("ChatGPT временно не доступен, попробуйте позже")
+    if message.text and message.text.startswith("перемешать"):
+        await blend_state_handler(message)
         return
-
-    builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(text="сбросить контекст", callback_data="gpt"))
-
-    await message.answer(gpt_answer.choices[0].message.content, reply_markup=builder.as_markup())
-
-    if len(gpt_contexts) >= 15:
-        await GptContext.objects.delete_gpt_contexts(gpt_contexts)
-        await message.answer("Контекст очищен")
-
-    user.balance -= 1
-    await user.asave()
-
-
-@dp.message(Command("describe"))
-async def describe_handler(message: Message, state):
-    await state.clear()
 
     if not message.photo:
-        await message.answer("Пожалуйста, прикрепите фотографию")
+        await message.answer(
+            (
+                f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` "
+                f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
+            ),
+            parse_mode=ParseMode.MARKDOWN,
+        )
         return
 
+    file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+    downloaded_file = await bot.download_file(file_path=file.file_path)
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token, "Content-Type": "application/json"}
+
+    attachment = await upload_file(file=file, header=header)
+    if not attachment:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    upload_filename = attachment["upload_filename"]
+
+    new_blend = Blend(user=user, group_id=message.media_group_id, uploaded_filename=upload_filename)
+    await new_blend.asave()
+
+    await message.answer(
+        (
+            f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` "
+            f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
+        ),
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    await message.answer("фото загружено")
+
+
+async def describe_handler(message: Message):
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
     token = await mj_user_token_queue.get_sender_token()
@@ -269,150 +394,3 @@ async def describe_handler(message: Message, state):
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
     await new_describe.asave()
-
-
-@dp.message(Command("blend"))
-async def blend_handler(message: Message, state: FSMContext):
-    await state.clear()
-
-    await message.answer("Отправьте отдельным сообщением сгруппированное фото")
-
-    await state.set_state(BlendStateMachine.image)
-
-
-@dp.message(BlendStateMachine.image)
-async def blend_image_state_handler(message: Message, state: FSMContext):
-    user = await is_user_exist(chat_id=str(message.chat.id))
-    if not user:
-        await message.answer("Напишите боту /start")
-        return
-
-    if message.text and message.text.startswith("отмена"):
-        await message.answer("Отмена прошла успешна")
-        await state.clear()
-        return
-    if message.text and message.text.startswith("перемешать"):
-        await blend_state_handler(message, state)
-        return
-
-    if not message.media_group_id:
-        await message.answer("Пожалуйста, отправьте фотографии группой")
-        return
-    logger.error(message.media_group_id)
-
-    if not message.photo:
-        await message.answer(
-            (
-                f"Пожалуйста, прикрепите от двух до 4 фотографий и напишите `отмена {message.media_group_id}` "
-                f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
-            ),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        return
-
-    file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
-    downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token()
-    header = {"authorization": token, "Content-Type": "application/json"}
-
-    attachment = await upload_file(file=file, header=header)
-    if not attachment:
-        await message.answer("Не удалось загрузить файлы")
-        return
-
-    if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
-        await message.answer("Не удалось загрузить файлы")
-        return
-
-    upload_filename = attachment["upload_filename"]
-
-    new_blend = Blend(user=user, group_id=message.media_group_id, uploaded_filename=upload_filename)
-    await new_blend.asave()
-
-    await message.answer(
-        (
-            f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` "
-            f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
-        ),
-        parse_mode=ParseMode.MARKDOWN,
-    )
-    await message.answer("фото загружено")
-
-
-@dp.message(BlendStateMachine.blend)
-async def blend_state_handler(message: Message, state: FSMContext):
-    user = await is_user_exist(chat_id=str(message.chat.id))
-    if not user:
-        await message.answer("Напишите боту /start")
-        return
-
-    group_id = message.text.split(" ")[-1]
-    blends = await Blend.objects.get_blends_by_group_id(group_id)
-
-    await blend_trigger(blends)
-    await state.clear()
-
-
-@dp.message(Command("dalle"))
-async def dale_handler(message: Message, state, command):
-    await state.clear()
-
-    if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")
-        return
-
-    if command.args == "":
-        await message.answer("Добавьте описание")
-        return
-
-    locale = langdetect.detect(command.args)
-    if locale == "en":
-        prompt = command.args
-    else:
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a professional translator from Russian into English, "
-                    "everything that is said to you, you translate into English"
-                ),
-            },
-            {"role": "user", "content": command.args},
-        ]
-
-        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
-        prompt = prompt.choices[0].message.content
-
-    ban_words = await BanWord.objects.get_active_ban_words()
-    censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
-
-    if message.text and await is_has_censor(prompt, ban_words):
-        await message.answer(censor_message_answer)
-        return
-
-    prompt = prompt.replace(" ", ".")
-
-    suggestion = (
-        "Хотите обработать ваш запрос с помощью CHAT GPT для создания трех вариантов профессиональных промптов? "
-        "(Стоимость 1 токен)"
-    )
-
-    builder = InlineKeyboardBuilder()
-    prompt_buttons = (
-        types.InlineKeyboardButton(text="Обработать с CHAT GPT", callback_data=f"dalle_suggestion_gpt_{prompt}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{prompt}"),
-    )
-    kb = builder.row(*prompt_buttons)
-    logger.debug(prompt)
-    await message.answer(suggestion, reply_markup=kb.as_markup())
-
-
-@dp.message()
-async def handle_any(message: Message, state):
-    await state.clear()
-
-    if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")
-        return
-
-    await help_handler(message, state)
