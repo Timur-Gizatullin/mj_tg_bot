@@ -25,8 +25,6 @@ class DiscordMiddleWare(discord.Client):
         logger.info("Logged on as", self.user)
 
     async def on_message_edit(self, message_before: Message, message_after: Message):
-        logger.debug(message_after.embeds)
-
         if len(message_after.embeds) == 1 and len(message_before.embeds) == 0:
             logger.debug(message_after.embeds[0].description)
             logger.debug(message_after.embeds[0].image)
@@ -67,7 +65,7 @@ class DiscordMiddleWare(discord.Client):
         user: User = await User.objects.get_user_by_chat_id(chat_id)
 
         if len(message.attachments) == 0:
-            await bot.send_message(chat_id=chat_id, text=f"Идет генерация... ⌛️\nБаланс в токенах: {user.balance}")
+            await bot.send_message(chat_id=chat_id, text=f"Идет генерация... ⌛️\n")
             return
 
         logger.debug("Send new_message message to telegram")
@@ -108,7 +106,7 @@ class DiscordMiddleWare(discord.Client):
         )
 
         kb_links = await get_commands_keyboard("links")
-        await bot.send_message(chat_id=chat_id, text="Может быть полезно:", reply_markup=kb_links)
+        await bot.send_message(chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}", reply_markup=kb_links)
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
 

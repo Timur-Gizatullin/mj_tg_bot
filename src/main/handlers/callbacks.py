@@ -682,7 +682,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             },
             {"role": "user", "content": prompt},
         ]
-
+        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
@@ -695,11 +695,11 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         user.state = UserStateEnum.READY
         await user.asave()
 
-        await callback.message.answer(
+        await answer.edit_text(
             text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
         )
         await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
-        await callback.answer(cache_time=20)
+        await callback.answer(cache_time=100)
         return
     if action == "stay":
         if user.balance - 2 <= 0:
@@ -711,6 +711,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await callback.answer()
             return
 
+        await callback.message.answer(f"Идет генирация... ⌛\n")
         img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
         img_links = img_data["data"]
         for img_link in img_links:
@@ -720,11 +721,12 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                 chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
             )
         kb_links = await get_commands_keyboard("links")
-        await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 
         user.balance -= 2
         user.state = UserStateEnum.READY
         await user.asave()
+
+        await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}", reply_markup=kb_links)
 
         await callback.answer(cache_time=60)
         return
@@ -800,6 +802,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
+    await callback.message.answer(f"Идет генирация... ⌛\n")
     img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
     img_links = img_data["data"]
     for img_link in img_links:
@@ -810,10 +813,11 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         )
 
     kb_links = await get_commands_keyboard("links")
-    await bot.send_message(chat_id=callback.message.chat.id, text="Может быть полезно:", reply_markup=kb_links)
 
     telegram_user.balance -= 2
     telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
+    await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}",
+                           reply_markup=kb_links)
 
-    await callback.answer(cache_time=60)
+    await callback.answer(cache_time=500)

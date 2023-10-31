@@ -200,6 +200,7 @@ async def gpt_handler(message: types.Message):
 
     user.balance -= 1
     await user.asave()
+    await message.answer(text=f"Баланс в токенах {user.balance}")
 
 
 @dp.message(BlendStateMachine.blend)
