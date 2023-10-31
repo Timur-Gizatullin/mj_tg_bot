@@ -2,32 +2,42 @@ import requests
 from decouple import config
 from loguru import logger
 
+from main.models import Pay, User
 
-async def get_pay_link(amount: str, description: str, customer_id: str) -> str | None:
-    headers = {
-        "Wpay-Store-Api-Key": config("WALLET_API_KEY"),
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
+WALLET_PREVIEW_LINK = "https://pay.wallet.tg/wpay/store-api/v1/order/preview"
+WALLET_CREATE_ORDER = "https://pay.wallet.tg/wpay/store-api/v1/order"
+WALLET_HEADERS = {
+    "Wpay-Store-Api-Key": config("WALLET_API_KEY"),
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
 
+
+async def get_pay_link(amount: str, description: str, customer_id: str, chat_id: str, token_count: int) -> str | None:
     payload = {
         "amount": {
             "currencyCode": "USD",
             "amount": amount,
         },
         "description": description,
-        "externalId": "XXX-YYY-ZZZ",  # ID счета на оплату в вашем боте
+        "externalId": "XXX-YYY-ZZZ",  # ID счета на оплату в вашем боте #TODO
         "timeoutSeconds": 60 * 60 * 24,
         "customerTelegramUserId": customer_id,
         "returnUrl": "https://t.me/MJBOTTESTbot",
         "failReturnUrl": "https://t.me/wallet",
     }
 
-    response = requests.post("https://pay.wallet.tg/wpay/store-api/v1/order", json=payload, headers=headers, timeout=10)
+    response = requests.post(WALLET_CREATE_ORDER, json=payload, headers=WALLET_HEADERS, timeout=60)
     data = response.json()
 
     if (response.status_code != 200) or (data["status"] not in ["SUCCESS", "ALREADY"]):
-        logger.warning(f"# code: {0} json: {1}".format(response.status_code, data))
+        logger.warning("# code: {} json: {}".format(response.status_code, data))
         return None
+
+    pay_id = data["data"]["id"]
+    user: User = await User.objects.get_user_by_chat_id(chat_id)
+
+    pay_dto = Pay(amount=amount, token_count=token_count, pay_id=pay_id, user=user)
+    await pay_dto.asave()
 
     return data["data"]["payLink"]

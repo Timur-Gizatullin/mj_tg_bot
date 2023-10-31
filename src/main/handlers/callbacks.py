@@ -399,9 +399,14 @@ async def callback_pay(callback: types.CallbackQuery):
     amount = str(float(int(amount) // 100))
 
     if action == "wallet":
-        desc = "Get generations from mid journey on your telegram account"
+        desc = "Get tokens for Mid Journey telegram bot"
 
-        pay_link = await get_pay_link(amount=amount, description=desc, customer_id=str(callback.from_user.id))
+        pay_link = await get_pay_link(
+            amount=amount, description=desc,
+            customer_id=str(callback.from_user.id),
+            chat_id=str(callback.message.chat.id),
+            token_count=int(token)
+        )
 
         if not pay_link:
             await callback.message.answer("Что-то пошло не так :(")

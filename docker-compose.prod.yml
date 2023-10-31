@@ -72,7 +72,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    command: [ 'celery', '-A', 't_bot', 'worker', '-l', 'info' ]
+    command: [ 'celery', '-A', 't_bot', 'worker', '-l', 'info', '-B' ]
     expose:
       - 6379
     depends_on:

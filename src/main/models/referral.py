@@ -40,9 +40,10 @@ class Referral(models.Model):
         related_name="referrals",
         verbose_name="referrer",
     )
+    name: str = models.CharField(null=True, blank=True)
     used_count = models.IntegerField(default=int())
 
     objects = ReferralManager()
 
     def __str__(self):
-        return self.referrer.telegram_username
+        return f"{self.referrer.telegram_username}[{self.name}]"
