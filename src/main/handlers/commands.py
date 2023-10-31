@@ -230,8 +230,12 @@ async def dale_handler(message: Message):
     callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
-        types.InlineKeyboardButton(text="CHAT GPT", callback_data=f"dalle_suggestion_gpt_{message.chat.id}-{message.message_id}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"dalle_suggestion_stay_{message.chat.id}-{message.message_id}"),
+        types.InlineKeyboardButton(
+            text="CHAT GPT", callback_data=f"dalle_suggestion_gpt_{message.chat.id}-{message.message_id}"
+        ),
+        types.InlineKeyboardButton(
+            text="Оставить мой", callback_data=f"dalle_suggestion_stay_{message.chat.id}-{message.message_id}"
+        ),
     )
     kb = builder.row(*prompt_buttons)
     await message.answer(suggestion, reply_markup=kb.as_markup())
@@ -260,8 +264,12 @@ async def handle_imagine(message):
     callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
-        types.InlineKeyboardButton(text="CHAT GPT", callback_data=f"suggestion_gpt_{message.chat.id}-{message.message_id}"),
-        types.InlineKeyboardButton(text="Оставить мой", callback_data=f"suggestion_stay_{message.chat.id}-{message.message_id}"),
+        types.InlineKeyboardButton(
+            text="CHAT GPT", callback_data=f"suggestion_gpt_{message.chat.id}-{message.message_id}"
+        ),
+        types.InlineKeyboardButton(
+            text="Оставить мой", callback_data=f"suggestion_stay_{message.chat.id}-{message.message_id}"
+        ),
     )
     kb = builder.row(*prompt_buttons)
     await message.answer(suggestion, reply_markup=kb.as_markup())

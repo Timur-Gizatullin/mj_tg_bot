@@ -106,7 +106,9 @@ class DiscordMiddleWare(discord.Client):
         )
 
         kb_links = await get_commands_keyboard("links")
-        await bot.send_message(chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}", reply_markup=kb_links)
+        await bot.send_message(
+            chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}", reply_markup=kb_links
+        )
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
 

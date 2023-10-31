@@ -38,8 +38,8 @@ zoom_buttons = (
 )
 
 upscale_buttons = (
-    types.InlineKeyboardButton(text="🔼 Upscale (x2)", callback_data="_v5_2x"),
-    types.InlineKeyboardButton(text="⏫ Upscale (x4)", callback_data="_v5_4x"),
+    types.InlineKeyboardButton(text="🔼 Upscale (x2)", callback_data="confirm_v5_2x"),
+    types.InlineKeyboardButton(text="⏫ Upscale (x4)", callback_data="confirm_v5_4x"),
 )
 
 redo_upscale_buttons = (

@@ -91,13 +91,42 @@ async def callbacks_variations(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@callback_router.callback_query(lambda c: c.data.startswith("confirm_v5"))
+async def callbacks_confirm_upsamples_v5(callback: types.CallbackQuery):
+    action = callback.data.split("_")[-1]
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        types.InlineKeyboardButton(text="ДА!", callback_data=f"_v5_{action}"),
+        types.InlineKeyboardButton(text="НЕТ!", callback_data=f"_v5_cancel"),
+    )
+    await bot.send_document(
+        chat_id=callback.message.chat.id,
+        caption="Upscale -  увеличивает размер изображения, добавляя мельчайшие детали, в 2 (2048х2048) "
+        "и 4 раза (4096х4096), файлы 4х  могут не открываться на смартфоне, используйте компьютер.\n"
+        "Стоимость:\n"
+        "Upscale 2x = 4 токена\n"
+        "Upscale 4x = 8 токенов\n\n"
+        "Сгенерировать?",
+        reply_markup=builder.as_markup(),
+        document=callback.message.document.file_id,
+    )
+    await callback.answer()
+
+
 @callback_router.callback_query(lambda c: c.data.startswith("_v5"))
 async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     action = callback.data
+    cancel = callback.data.split("_")[-1]
     message_hash = callback.message.document.file_name.split(".")[0]
-
+    logger.debug(action)
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
+
+    if cancel == "cancel":
+        await callback.message.answer("Отменено")
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        return
 
     if action == "2x":
         cost = 4
@@ -598,7 +627,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
             text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
         )
         await callback.message.answer(text=f"Баланс в токенах: {user.balance}")
-        await callback.answer(cache_time=200)
+        await callback.answer(cache_time=1000)
         return
     if action == "stay":
         if user.balance - 2 <= 0:
@@ -612,7 +641,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
             await user.asave()
 
         await imagine_trigger(callback.message, prompt)
-        await callback.answer(cache_time=60)
+        await callback.answer(cache_time=2000)
 
         user.balance -= 2
         await user.asave()
@@ -695,9 +724,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         user.state = UserStateEnum.READY
         await user.asave()
 
-        await answer.edit_text(
-            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
-        )
+        await answer.edit_text(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
         await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
         await callback.answer(cache_time=100)
         return
@@ -726,7 +753,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         user.state = UserStateEnum.READY
         await user.asave()
 
-        await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}", reply_markup=kb_links)
+        await bot.send_message(
+            chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}", reply_markup=kb_links
+        )
 
         await callback.answer(cache_time=60)
         return
@@ -817,7 +846,8 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     telegram_user.balance -= 2
     telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
-    await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}",
-                           reply_markup=kb_links)
+    await bot.send_message(
+        chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}", reply_markup=kb_links
+    )
 
     await callback.answer(cache_time=500)
