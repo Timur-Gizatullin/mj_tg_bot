@@ -5,6 +5,7 @@ import requests
 from celery import Celery
 from django.conf import settings
 
+from main.enums import UserRoleEnum
 from t_bot.settings import TELEGRAM_TOKEN
 
 logger = logging.getLogger("django")
@@ -40,6 +41,8 @@ def check_pays():
             requests.post(
                 f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={unverified_pay.user.chat_id}&text={message}"
             )
+            if unverified_pay.user.balance > 5:
+                unverified_pay.user.role = UserRoleEnum.BASE
 
 
 app.config_from_object(settings, namespace="CELERY")

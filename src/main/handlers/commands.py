@@ -10,7 +10,7 @@ from decouple import config
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.enums import AnswerTypeEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
 from main.handlers.utils.interactions import (
     INTERACTION_URL,
     _trigger_payload,
@@ -204,6 +204,8 @@ async def gpt_handler(message: types.Message):
         await message.answer("Контекст очищен")
 
     user.balance -= 1
+    if user.balance <= 5:
+        user.role = UserRoleEnum.BASE
     await user.asave()
     await message.answer(text=f"Баланс в токенах {user.balance}")
 

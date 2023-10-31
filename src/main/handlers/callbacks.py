@@ -12,7 +12,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_HOST
-from main.enums import AnswerTypeEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
 from main.handlers.commands import bot, gpt, is_user_exist
 from main.handlers.utils.interactions import (
     blend_trigger,
@@ -94,6 +94,8 @@ async def callbacks_variations(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -166,6 +168,8 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= cost
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -221,6 +225,8 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -261,6 +267,8 @@ async def callback_reset(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -303,6 +311,8 @@ async def callback_vary(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -344,6 +354,8 @@ async def callback_zoom(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -382,6 +394,8 @@ async def callback_pan(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -455,6 +469,8 @@ async def callbacks_describe(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -581,9 +597,9 @@ async def pay_options_callback(callback: types.CallbackQuery):
     answer = f"Платеж на {token} успешно создан"
     builder = InlineKeyboardBuilder()
     buttons = (
-        types.InlineKeyboardButton(
-            text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"
-        ),
+        # types.InlineKeyboardButton(
+        #     text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"
+        # ),
         types.InlineKeyboardButton(text="Telegram Wallet", callback_data=f"pay_choose_wallet_{amount}_{token}"),
     )
     for button in buttons:
@@ -661,6 +677,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
         builder.row(*buttons)
 
         user.balance -= 1
+        if user.balance < 5:
+            user.role = UserRoleEnum.BASE
         user.state = UserStateEnum.READY
         await user.asave()
 
@@ -686,6 +704,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
         if res.ok:
             user.balance -= 2
+            if user.balance < 5:
+                user.role = UserRoleEnum.BASE
             await user.asave()
             await callback.message.answer("Идет генирация... ⌛\n")
         else:
@@ -765,6 +785,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         builder.row(*buttons)
 
         user.balance -= 1
+        if user.balance < 5:
+            user.role = UserRoleEnum.BASE
         user.state = UserStateEnum.READY
         await user.asave()
 
@@ -793,6 +815,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             )
 
         user.balance -= 2
+        if user.balance < 5:
+            user.role = UserRoleEnum.BASE
         user.state = UserStateEnum.READY
         await user.asave()
 
@@ -841,6 +865,8 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
 
     if res.ok:
         telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
         await telegram_user.asave()
         await callback.message.answer("Идет генирация... ⌛\n")
     else:
@@ -889,6 +915,8 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         )
 
     telegram_user.balance -= 2
+    if telegram_user.balance < 5:
+        telegram_user.role = UserRoleEnum.BASE
     telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
     await bot.send_message(
