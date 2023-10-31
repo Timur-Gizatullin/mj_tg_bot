@@ -174,14 +174,16 @@ async def describe_reset_trigger(message_id: str):
 
 async def blend_trigger(blends: list[Blend]):
     attachments = []
+    i = 0
     for blend in blends:
         attachments.append(
             {
-                "id": "0",
+                "id": i,
                 "filename": blend.uploaded_filename.split("/")[-1],
                 "uploaded_filename": blend.uploaded_filename,
             }
         )
+        i += 1
 
     payload = _trigger_payload(
         2,
@@ -190,7 +192,23 @@ async def blend_trigger(blends: list[Blend]):
             "id": "1062880104792997970",
             "name": "blend",
             "type": 1,
-            # "options": [{"type": 11, "name": "image1", "value": 0}, {"type": 11, "name": "image2", "value": 1}],
+            "options": [
+                {"type": 11, "name": "image1", "description": "First image to add to the blend", "required": True},
+                {"type": 11, "name": "image2", "description": "Second image to add to the blend", "required": True},
+                {
+                    "type": 3,
+                    "name": "dimensions",
+                    "description": "The dimensions of the image. If not specified, the image will be square.",
+                    "choices": [
+                        {"name": "Portrait", "value": "--ar 2:3"},
+                        {"name": "Square", "value": "--ar 1:1"},
+                        {"name": "Landscape", "value": "--ar 3:2"},
+                    ],
+                },
+                {"type": 11, "name": "image3", "description": "Third image to add to the blend (optional)"},
+                {"type": 11, "name": "image4", "description": "Fourth image to add to the blend (optional)"},
+                {"type": 11, "name": "image5", "description": "Fifth image to add to the blend (optional)"},
+            ],
             "attachments": attachments,
         },
     )

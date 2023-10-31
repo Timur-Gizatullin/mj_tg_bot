@@ -9,11 +9,16 @@ class BlendManager(models.Manager):
     def get_blends_by_group_id(self, group_id: int) -> list["Blend"]:
         return list(self.filter(group_id=group_id).all())
 
+    @sync_to_async()
+    def get_latest_blend(self, group_id) -> list["Blend"]:
+        return self.filter(group_id=group_id).order_by("created_at").first()
+
 
 class Blend(models.Model):
     user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="blends")
     group_id: str = models.CharField()
     uploaded_filename: str = models.CharField()
+    last_message_id: str = models.CharField(null=True)
     created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     objects = BlendManager()

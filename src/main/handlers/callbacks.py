@@ -13,8 +13,9 @@ from loguru import logger
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum, UserStateEnum
-from main.handlers.commands import bot, gpt
+from main.handlers.commands import bot, gpt, is_user_exist
 from main.handlers.utils.interactions import (
+    blend_trigger,
     describe_reset_trigger,
     imagine_trigger,
     send_pan_trigger,
@@ -34,6 +35,7 @@ django.setup()
 
 from main.models import (  # noqa: E402
     BanWord,
+    Blend,
     GptContext,
     Prompt,
     Referral,
@@ -402,10 +404,11 @@ async def callback_pay(callback: types.CallbackQuery):
         desc = "Get tokens for Mid Journey telegram bot"
 
         pay_link = await get_pay_link(
-            amount=amount, description=desc,
+            amount=amount,
+            description=desc,
             customer_id=str(callback.from_user.id),
             chat_id=str(callback.message.chat.id),
-            token_count=int(token)
+            token_count=int(token),
         )
 
         if not pay_link:
@@ -893,3 +896,20 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     )
 
     await callback.answer(cache_time=500)
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("blend"))
+async def blend_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[-1]
+    user = await is_user_exist(chat_id=str(callback.message.chat.id))
+    if not user:
+        await callback.message.answer("Напишите боту /start")
+        return
+
+    blends = await Blend.objects.get_blends_by_group_id(action)
+
+    response = await blend_trigger(blends)
+    logger.debug(response.text)
+
+    user.state = UserStateEnum.READY
+    await user.asave()

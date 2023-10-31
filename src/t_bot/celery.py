@@ -38,7 +38,8 @@ def check_pays():
             unverified_pay.save()
             message = f"Транзакция прошла успешно, ваш баланс {unverified_pay.user.balance}"
             requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={unverified_pay.user.chat_id}&text={message}")
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={unverified_pay.user.chat_id}&text={message}"
+            )
 
 
 app.config_from_object(settings, namespace="CELERY")

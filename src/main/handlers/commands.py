@@ -131,13 +131,20 @@ async def mj_handler(message: Message) -> None:
 
     user.state = UserStateEnum.PENDING
     await user.asave()
-
+    logger.debug(message.media_group_id)
     if message.text and not message.photo and not message.media_group_id:
         await handle_imagine(message)
     elif message.photo and not message.text and not message.media_group_id:
         await describe_handler(message, user)
-    elif message.media_group_id and not message.text and not message.photo:
-        await blend_images_handler(message)
+    elif message.media_group_id and not message.text:
+        # blends = await Blend.objects.get_blends_by_group_id(message.media_group_id)
+        # builder = InlineKeyboardBuilder()
+        # blend_kb = builder.row(
+        #     types.InlineKeyboardButton(text="Перемешать", callback_data=f"blend_{message.media_group_id}")
+        # )
+        # await message.answer(text="Загружаем фото", reply_markup=blend_kb.as_markup())
+        # await blend_images_handler(message)
+        pass
 
     user.state = UserStateEnum.READY
     await user.asave()
@@ -201,23 +208,6 @@ async def gpt_handler(message: types.Message):
     await message.answer(text=f"Баланс в токенах {user.balance}")
 
 
-@dp.message(BlendStateMachine.blend)
-async def blend_state_handler(message: Message, state: FSMContext):
-    user = await is_user_exist(chat_id=str(message.chat.id))
-    if not user:
-        await message.answer("Напишите боту /start")
-        return
-
-    group_id = message.text.split(" ")[-1]
-    blends = await Blend.objects.get_blends_by_group_id(group_id)
-
-    await blend_trigger(blends)
-    await state.set_state(MenuState.mj)
-
-    user.state = UserStateEnum.READY
-    await user.asave()
-
-
 @dp.message(MenuState.dalle)
 async def dale_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
@@ -242,17 +232,6 @@ async def dale_handler(message: Message):
     await user.asave()
 
 
-@dp.message()
-async def handle_any(message: Message, state):
-    await state.clear()
-
-    if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")
-        return
-
-    await help_handler(message, state)
-
-
 async def handle_imagine(message):
     suggestion = (
         "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
@@ -273,29 +252,11 @@ async def handle_imagine(message):
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
-@dp.message(BlendStateMachine.image)
 async def blend_images_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
     if not user:
         await message.answer("Напишите боту /start")
         user.state = UserStateEnum.PENDING
-        await user.asave()
-        return
-
-    if message.text and message.text.startswith("отмена"):
-        await message.answer("Отмена прошла успешна")
-        user.state = UserStateEnum.READY
-        await user.asave()
-        return
-    if message.text and message.text.startswith("перемешать"):
-        await blend_state_handler(message)
-        user.state = UserStateEnum.PENDING
-        await user.asave()
-        return
-
-    if not message.photo:
-        await message.answer("Пожалуйста, прикрепите от двух до 4 фотографий и напишите")
-        user.state = UserStateEnum.READY
         await user.asave()
         return
 
@@ -315,17 +276,28 @@ async def blend_images_handler(message: Message):
 
     upload_filename = attachment["upload_filename"]
 
-    new_blend = Blend(user=user, group_id=message.media_group_id, uploaded_filename=upload_filename)
+    new_blend = Blend(
+        user=user,
+        group_id=message.media_group_id,
+        uploaded_filename=upload_filename,
+        last_message_id=message.message_id,
+    )
     await new_blend.asave()
 
-    await message.answer(
-        (
-            f"Когда все фотографии загрузятся напишите `отмена {message.media_group_id}` "
-            f"или `перемешать {message.media_group_id}`, когда все фотографии будут загружены"
-        ),
-        parse_mode=ParseMode.MARKDOWN,
-    )
-    await message.answer("фото загружено")
+
+async def blend_state_handler(message: Message, group_id):
+    user = await is_user_exist(chat_id=str(message.chat.id))
+    if not user:
+        await message.answer("Напишите боту /start")
+        return
+
+    blends = await Blend.objects.get_blends_by_group_id(group_id)
+
+    response = await blend_trigger(blends)
+    logger.debug(response.text)
+
+    user.state = UserStateEnum.READY
+    await user.asave()
 
 
 async def describe_handler(message: Message, user: User):
@@ -376,3 +348,14 @@ async def describe_handler(message: Message, user: User):
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
     await new_describe.asave()
+
+
+@dp.message()
+async def handle_any(message: Message, state):
+    await state.clear()
+
+    if not await is_user_exist(chat_id=str(message.chat.id)):
+        await message.answer("Напишите боту /start")
+        return
+
+    await help_handler(message, state)
