@@ -10,7 +10,7 @@ from discord.message import Message
 from loguru import logger
 
 from main.enums import UserStateEnum
-from main.keyboards.commands import get_commands_keyboard
+from main.keyboards.commands import get_commands_keyboard, resources
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -65,7 +65,6 @@ class DiscordMiddleWare(discord.Client):
         user: User = await User.objects.get_user_by_chat_id(chat_id)
 
         if len(message.attachments) == 0:
-            await bot.send_message(chat_id=chat_id, text=f"Идет генерация... ⌛️\n")
             return
 
         logger.debug("Send new_message message to telegram")
@@ -105,10 +104,7 @@ class DiscordMiddleWare(discord.Client):
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )
 
-        kb_links = await get_commands_keyboard("links")
-        await bot.send_message(
-            chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}", reply_markup=kb_links
-        )
+        await bot.send_message(chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}\n\n{resources}")
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
 

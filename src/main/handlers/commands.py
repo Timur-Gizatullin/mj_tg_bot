@@ -17,7 +17,7 @@ from main.handlers.utils.interactions import (
     blend_trigger,
     mj_user_token_queue,
 )
-from main.keyboards.commands import get_commands_keyboard
+from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
     BanWord,
     Blend,
@@ -38,7 +38,7 @@ from main.utils import (
 from t_bot.settings import TELEGRAM_TOKEN
 
 dp = Dispatcher()
-bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
 openai.api_key = config("OPEN_AI_API_KEY")
 gpt = openai.ChatCompletion
@@ -87,10 +87,8 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     await message.answer(initial_message, reply_markup=start_kb)
 
-    links_kb = await get_commands_keyboard("start_links")
-
     await message.answer(
-        "Запуская данный бот Вы даете согласие на правила использования нашего сервиса.", reply_markup=links_kb
+        f"Запуская данный бот Вы даете согласие на правила использования нашего сервиса.\n\n{resources}"
     )
 
 

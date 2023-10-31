@@ -27,7 +27,7 @@ def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, An
     return payload
 
 
-async def send_variation_trigger(variation_index: str, queue: Prompt) -> int:
+async def send_variation_trigger(variation_index: str, queue: Prompt):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -43,7 +43,7 @@ async def send_variation_trigger(variation_index: str, queue: Prompt) -> int:
     return response
 
 
-async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str = "") -> int:
+async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str = ""):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -59,10 +59,10 @@ async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
-async def send_reset_trigger(message_id: str, message_hash: str) -> int:
+async def send_reset_trigger(message_id: str, message_hash: str):
     kwargs = {
         "message_flags": 0,
         "message_id": message_id,
@@ -75,10 +75,10 @@ async def send_reset_trigger(message_id: str, message_hash: str) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
-async def send_vary_trigger(vary_type: str, queue: Prompt) -> int:
+async def send_vary_trigger(vary_type: str, queue: Prompt):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -91,10 +91,10 @@ async def send_vary_trigger(vary_type: str, queue: Prompt) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
-async def send_zoom_trigger(zoomout: str, queue: Prompt) -> int:
+async def send_zoom_trigger(zoomout: str, queue: Prompt):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -109,10 +109,10 @@ async def send_zoom_trigger(zoomout: str, queue: Prompt) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
-async def send_pan_trigger(direction: str, queue: Prompt) -> int:
+async def send_pan_trigger(direction: str, queue: Prompt):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -125,7 +125,7 @@ async def send_pan_trigger(direction: str, queue: Prompt) -> int:
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
 async def imagine_trigger(message, prompt):
@@ -153,7 +153,9 @@ async def imagine_trigger(message, prompt):
 
     await message.answer(help_message)
 
-    requests.post(INTERACTION_URL, json=payload, headers=header)
+    response = requests.post(INTERACTION_URL, json=payload, headers=header)
+
+    return response
 
 
 async def describe_reset_trigger(message_id: str):
@@ -167,7 +169,7 @@ async def describe_reset_trigger(message_id: str):
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
 
-    return response.status_code
+    return response
 
 
 async def blend_trigger(blends: list[Blend]):
@@ -200,3 +202,5 @@ async def blend_trigger(blends: list[Blend]):
 
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
     logger.debug(response.text)
+
+    return response

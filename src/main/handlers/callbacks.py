@@ -14,7 +14,6 @@ from loguru import logger
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum, UserStateEnum
 from main.handlers.commands import bot, gpt
-from main.handlers.queue import queue_handler
 from main.handlers.utils.interactions import (
     describe_reset_trigger,
     imagine_trigger,
@@ -26,7 +25,7 @@ from main.handlers.utils.interactions import (
     send_zoom_trigger,
 )
 from main.handlers.utils.wallet import get_pay_link
-from main.keyboards.commands import get_commands_keyboard
+from main.keyboards.commands import cancel_kb, resources
 from main.keyboards.pay import get_inline_keyboard_from_buttons
 from main.utils import MenuState, callback_data_util, is_has_censor
 
@@ -43,6 +42,18 @@ from main.models import (  # noqa: E402
 )
 
 callback_router = Router()
+GPT_OPTION = """The ethereal quality of the charcoal brings a nostalgic feel that complements the natural light streaming softly through a lace-curtained window. In the background, the texture of the vintage furniture provides an intricate carpet of detail, with a monochromatic palette serving to emphasize the subject of the piece. This charcoal drawing imparts a sense of tranquillity and wisdom with an authenticity that captures the subject's essence. Use different lenses, cameras, focus, light and scenes options. 
+ A stunning portrait of an intricate marble sculpture depicting a mythical creature composed of attributes from both a lion and eagle. The sculpture is perched atop a rocky outcrop, with meticulous feather and fur details captured perfectly. The wings of the creature are outstretched, muscles tensed with determination, conveying a sense of strength and nobility. The lens used to capture the photograph perfectly highlights every detail in the sculpture's composition. The image has a sharp focus and excellent clarity. Canon EF 24-70mm f/2.8L II USM lens at 50mm, ISO 100, f/5.6, 1/50s, --ar 4:3
+
+ Astounding astrophotography image of the Milky Way over Stonehenge, emphasizing the human connection to the cosmos across time. The enigmatic stone structure stands in stark silhouette with the awe-inspiring night sky, showcasing the complexity and beauty of our galaxy. The contrast accentuates the weathered surfaces of the stones, highlighting their intricate play of light and shadow. Sigma Art 14mm f/1.8, ISO 3200, f/1.8, 15s --ar 16:9
+
+ A professional photograph of a poised woman showcased in her natural beauty, standing amidst a vibrant field of tall, swaying grass during golden hour. The radiant rays of sun shimmer and cast a glow around her. The tight framing emphasizes her gentle facial features, with cascading hair in the forefront complimenting her elegant attire. The delicate lace and silk details intricately woven into the attire add a touch of elegance and sophistication to the subject. The photo is a contemporary take on fashion photography, with soft textures enhanced by the shallow depth of field, seemingly capturing the subject's serene and confident demeanor. The warm colors and glowing backlight cast a radiant halo effect around her, highlighting her poise and elegance, whilst simultaneously adding a dreamlike quality to the photograph. Otus 85mm f/1.4 ZF.2 Lens, ISO 200, f/4, 1/250s --ar 2:3
+
+use different lens and cameras
+
+You will now receive a text prompt from me and then create three creative prompts for the Midjourney AI art generator using the best practices mentioned above. Do not include explanations in your response. List three prompts with correct syntax without unnecessary words. Do not generate any prompts until I give you specific input to do so. Use different code blocks for every single text prompt, to make it easy to copy.
+Yoy always give 3 options.
+"""
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("V"))
@@ -71,22 +82,22 @@ async def callbacks_variations(callback: types.CallbackQuery):
     await telegram_user.asave()
 
     if action == "V1":
-        await queue_handler.add_task(
-            send_variation_trigger, variation_index="1", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_variation_trigger(variation_index="1", queue=queue)
     elif action == "V2":
-        await queue_handler.add_task(
-            send_variation_trigger, variation_index="2", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_variation_trigger(variation_index="2", queue=queue)
     elif action == "V3":
-        await queue_handler(send_variation_trigger, variation_index="3", queue=queue, user_role=telegram_user.role)
+        res = await send_variation_trigger(variation_index="3", queue=queue)
     elif action == "V4":
-        await queue_handler.add_task(
-            send_variation_trigger, variation_index="4", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_variation_trigger(variation_index="4", queue=queue)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -149,12 +160,16 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    await queue_handler.add_task(
-        send_upsample_trigger, upsample_index="1", queue=queue, version=action, user_role=telegram_user.role
-    )
+    res = await send_upsample_trigger(upsample_index="1", queue=queue, version=action)
 
-    telegram_user.balance -= cost
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= cost
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("U"))
@@ -194,24 +209,22 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     await callback.message.answer(help_message)
 
     if action == "U1":
-        await queue_handler.add_task(
-            send_upsample_trigger, upsample_index="1", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_upsample_trigger(upsample_index="1", queue=queue)
     elif action == "U2":
-        await queue_handler.add_task(
-            send_upsample_trigger, upsample_index="2", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_upsample_trigger(upsample_index="2", queue=queue)
     elif action == "U3":
-        await queue_handler.add_task(
-            send_upsample_trigger, upsample_index="3", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_upsample_trigger(upsample_index="3", queue=queue)
     elif action == "U4":
-        await queue_handler.add_task(
-            send_upsample_trigger, upsample_index="4", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_upsample_trigger(upsample_index="4", queue=queue)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -239,15 +252,19 @@ async def callback_reset(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    await queue_handler.add_task(
-        send_reset_trigger,
+    res = await send_reset_trigger(
         message_id=queue.discord_message_id,
         message_hash=queue.message_hash,
-        user_role=telegram_user.role,
     )
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -278,16 +295,18 @@ async def callback_vary(callback: types.CallbackQuery):
     await telegram_user.asave()
 
     if action == "strong":
-        await queue_handler.add_task(
-            send_vary_trigger, vary_type="high_variation", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_vary_trigger(vary_type="high_variation", queue=queue)
     elif action == "subtle":
-        await queue_handler.add_task(
-            send_vary_trigger, vary_type="low_variation", queue=queue, user_role=telegram_user.role
-        )
+        res = await send_vary_trigger(vary_type="low_variation", queue=queue)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -317,12 +336,18 @@ async def callback_zoom(callback: types.CallbackQuery):
     telegram_user.state = UserStateEnum.PENDING
 
     if action == "2":
-        await queue_handler.add_task(send_zoom_trigger, queue=queue, zoomout=1, user_role=telegram_user.role)
+        res = await send_zoom_trigger(queue=queue, zoomout=1)
     elif action == "1.5":
-        await queue_handler.add_task(send_zoom_trigger, queue=queue, zoomout=action, user_role=telegram_user.role)
+        res = await send_zoom_trigger(queue=queue, zoomout=action)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -351,10 +376,16 @@ async def callback_pan(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    await queue_handler.add_task(send_pan_trigger, queue=queue, direction=action, user_role=telegram_user.role)
+    res = await send_pan_trigger(queue=queue, direction=action)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -410,14 +441,18 @@ async def callbacks_describe(callback: types.CallbackQuery):
         logger.debug(callback.message.caption)
         logger.debug(prompt)
 
-        await queue_handler.add_task(
-            imagine_trigger, message=callback.message, prompt=prompt, user_role=telegram_user.role
-        )
+        res = await imagine_trigger(message=callback.message, prompt=prompt)
     elif callback.data == "reset":
-        await describe_reset_trigger(message_id=telegram_user.chat_id)
+        res = await describe_reset_trigger(message_id=telegram_user.chat_id)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -555,6 +590,10 @@ async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_id = callback.data.split("_")[-1]
     message = callback_data_util.get(message_id)
+    if not message:
+        await callback.message.answer("Сообщение удалено из кэша, введите ваш промпт снова")
+        await callback.answer()
+        return
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if user.state == UserStateEnum.PENDING:
@@ -603,16 +642,10 @@ async def suggestion_callback(callback: types.CallbackQuery):
             return
 
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are an prompt assistant, skilled at making prompt for "
-                    "Mid Journey better. You always give 3 options"
-                ),
-            },
+            {"role": "system", "content": GPT_OPTION},
             {"role": "user", "content": prompt},
         ]
-
+        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
@@ -627,7 +660,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
             text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
         )
         await callback.message.answer(text=f"Баланс в токенах: {user.balance}")
-        await callback.answer(cache_time=1000)
+        await callback.answer(cache_time=4000)
         return
     if action == "stay":
         if user.balance - 2 <= 0:
@@ -640,13 +673,17 @@ async def suggestion_callback(callback: types.CallbackQuery):
             user.state = UserStateEnum.READY
             await user.asave()
 
-        await imagine_trigger(callback.message, prompt)
+        res = await imagine_trigger(callback.message, prompt)
         await callback.answer(cache_time=2000)
 
-        user.balance -= 2
-        await user.asave()
-
-        return
+        if res.ok:
+            user.balance -= 2
+            await user.asave()
+            await callback.message.answer("Идет генирация... ⌛\n")
+        else:
+            user.state = UserStateEnum.READY
+            await user.asave()
+            await callback.message.answer("Не удалось отправить запрос")
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("dalle"))
@@ -654,6 +691,10 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[2]
     message_id = callback.data.split("_")[-1]
     message = callback_data_util.get(message_id)
+    if not message:
+        await callback.message.answer("Сообщение удалено из кэша, введите ваш промпт снова")
+        await callback.answer()
+        return
     user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if user.state == UserStateEnum.PENDING:
@@ -676,6 +717,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             {"role": "user", "content": message},
         ]
 
+        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
         prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
         prompt = prompt.choices[0].message.content
 
@@ -702,13 +744,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             return
 
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are an prompt assistant, skilled at making prompt for "
-                    "Mid Journey better. You always give 3 options"
-                ),
-            },
+            {"role": "system", "content": GPT_OPTION},
             {"role": "user", "content": prompt},
         ]
         answer = await callback.message.answer(f"GPT думает ... ⌛\n")
@@ -738,7 +774,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await callback.answer()
             return
 
-        await callback.message.answer(f"Идет генирация... ⌛\n")
+        await callback.message.answer("Идет генирация... ⌛\n")
         img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
         img_links = img_data["data"]
         for img_link in img_links:
@@ -747,15 +783,12 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await bot.send_photo(
                 chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
             )
-        kb_links = await get_commands_keyboard("links")
 
         user.balance -= 2
         user.state = UserStateEnum.READY
         await user.asave()
 
-        await bot.send_message(
-            chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}", reply_markup=kb_links
-        )
+        await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}\n\n{resources}")
 
         await callback.answer(cache_time=60)
         return
@@ -796,10 +829,16 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
-    await imagine_trigger(message=callback.message, prompt=prompt)
+    res = await imagine_trigger(message=callback.message, prompt=prompt)
 
-    telegram_user.balance -= 2
-    await telegram_user.asave()
+    if res.ok:
+        telegram_user.balance -= 2
+        await telegram_user.asave()
+        await callback.message.answer("Идет генирация... ⌛\n")
+    else:
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -841,13 +880,11 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
             chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
         )
 
-    kb_links = await get_commands_keyboard("links")
-
     telegram_user.balance -= 2
     telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
     await bot.send_message(
-        chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}", reply_markup=kb_links
+        chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}\n\n{resources}"
     )
 
     await callback.answer(cache_time=500)
