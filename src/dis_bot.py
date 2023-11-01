@@ -104,6 +104,7 @@ class DiscordMiddleWare(discord.Client):
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )
 
+        logger.debug(message)
         await QueueHandler.exclude_queue(chat_id, telegram_user=telegram_user)
 
         await bot.send_message(chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}\n\n{resources}")

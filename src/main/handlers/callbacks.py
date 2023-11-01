@@ -583,7 +583,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
             {"role": "system", "content": GPT_OPTION},
             {"role": "user", "content": prompt},
         ]
-        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
+        await callback.message.answer(f"GPT думает ... ⌛\n")
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
@@ -613,19 +613,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
             user.state = UserStateEnum.READY
             await user.asave()
 
-        res = await imagine_trigger(callback.message, prompt)
+        await imagine_trigger(callback.message, prompt)
         await callback.answer(cache_time=2000)
-
-        # if res.ok:
-        user.balance -= 2
-        if user.balance < 5:
-            user.role = UserRoleEnum.BASE
-        await user.asave()
-        await callback.message.answer("Идет генирация... ⌛")
-        # else:
-        #     user.state = UserStateEnum.READY
-        #     await user.asave()
-        #     await callback.message.answer("Не удалось отправить запрос")
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("dalle"))
@@ -775,18 +764,7 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
-    res = await imagine_trigger(message=callback.message, prompt=prompt)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+    await imagine_trigger(message=callback.message, prompt=prompt)
 
     await callback.answer()
 
@@ -818,7 +796,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
-    await callback.message.answer(f"Идет генирация... ⌛\n")
+    await callback.message.answer(f"Идет генерация... ⌛\n")
     img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
     img_links = img_data["data"]
     for img_link in img_links:

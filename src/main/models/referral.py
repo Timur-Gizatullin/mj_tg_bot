@@ -17,7 +17,7 @@ class ReferralManager(models.Manager):
 
     @sync_to_async()
     def get_referral(self, referral_key: int) -> "Referral":
-        return self.filter(key=referral_key, is_active=True).first()
+        return self.filter(key=referral_key).first()
 
     @sync_to_async()
     def update_referrer_generations_count(self, referral_key: int) -> None:

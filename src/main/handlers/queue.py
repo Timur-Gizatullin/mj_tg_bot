@@ -8,6 +8,7 @@ from redis import Redis
 
 from main.enums import UserRoleEnum, UserStateEnum
 from main.handlers.utils.const import INTERACTION_URL
+from main.models import User
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -32,11 +33,13 @@ class QueueHandler:
         r_queue.lrem("queue", 1, chat_id)
 
         try:
-            data = json.loads(r_queue.lpop("release"))
-            if data["action"] == "imagine":
+            qdata = json.loads(r_queue.lpop(f"{chat_id}"))
+
+            if qdata["action"] == "imagine":
                 await bot.send_message(chat_id=chat_id, text=help_message)
 
-            if data["action"] in (
+            logger.debug(qdata["action"])
+            if qdata["action"] in (
                 "imagine",
                 "variation",
                 "describe",
@@ -52,8 +55,9 @@ class QueueHandler:
                     telegram_user.role = UserRoleEnum.BASE
                 telegram_user.state = UserStateEnum.READY
                 await telegram_user.asave()
-            elif data["action"] in ("upscale_2x", "upscale_4x"):
-                if data["action"].split("_")[-1] == "2x":
+                logger.debug(telegram_user.state)
+            elif qdata["action"] in ("upscale_2x", "upscale_4x"):
+                if qdata["action"].split("_")[-1] == "2x":
                     cost = 4
                 else:
                     cost = 8
@@ -62,11 +66,17 @@ class QueueHandler:
                     telegram_user.role = UserRoleEnum.BASE
                 telegram_user.state = UserStateEnum.READY
                 await telegram_user.asave()
+        except Exception as e:
+            logger.error(e)
 
-            r_queue.rpush("queue", chat_id)
+        try:
+            data = json.loads(r_queue.lpop("release"))
+
+            r_queue.rpush("queue", str(chat_id))
+            r_queue.rpush(f"{chat_id}", json.dumps(data))
             response = requests.post(INTERACTION_URL, json=data["payload"], headers=data["header"])
             if response.ok:
-                await bot.send_message(chat_id=chat_id, text="Идет генирация... ⌛")
+                await bot.send_message(chat_id=chat_id, text="Идет генерация... ⌛")
             else:
                 await bot.send_message(chat_id=chat_id, text="Не удалось добавить запрос в очередь, попробуйте еще раз")
         except Exception as e:
@@ -76,14 +86,20 @@ class QueueHandler:
     async def include_queue(payload, header, message, action):
         logger.debug(r_queue.llen("queue"))
 
-        if r_queue.llen("queue") >= 1:
+        user: User = await User.objects.get_user_by_chat_id(message.chat.id)
+        user.state = UserStateEnum.PENDING
+        await user.asave()
+
+        if r_queue.llen("queue") >= 3:
             data = json.dumps({"payload": payload, "header": header, "action": action})
             r_queue.rpush("release", data)
             await message.answer(text="Запрос добавлен в очередь")
         else:
-            r_queue.rpush("queue", message.chat.id)
+            data = json.dumps({"payload": payload, "header": header, "action": action, "chat_id": message.chat.id})
+            r_queue.rpush(f"queue", message.chat.id)
+            r_queue.rpush(f"{message.chat.id}", data)
             response = requests.post(INTERACTION_URL, json=payload, headers=header)
             if response.ok:
-                await message.answer(text="Идет генирация... ⌛")
+                await message.answer(text="Идет генерация... ⌛")
             else:
                 await message.answer(text="Не удалось добавить запрос в очередь, попробуйте еще раз")

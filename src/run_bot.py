@@ -4,6 +4,9 @@ import os
 import sys
 
 import django
+from loguru import logger
+
+from main.handlers.queue import r_queue
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -14,6 +17,12 @@ from main.handlers.commands import bot, dp  # noqa: E402
 
 async def main() -> None:
     dp.include_router(callback_router)
+    for i in r_queue.lrange("queue", 0, -1):
+        logger.debug(f"Remove elements form queue")
+        r_queue.lpop("queue")
+    for i in r_queue.lrange("release", 0, -1):
+        logger.debug(f"Remove elements form release")
+        r_queue.lpop("release")
     await dp.start_polling(bot)
 
 

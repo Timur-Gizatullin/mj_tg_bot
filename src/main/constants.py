@@ -1,1 +1,1 @@
-BOT_HOST = "https://t.me/MJBOTTESTbot?start="
+BOT_HOST = "https://t.me/qwertymjtgBot?start="
