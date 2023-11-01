@@ -26,7 +26,7 @@ from main.handlers.utils.interactions import (
     send_zoom_trigger,
 )
 from main.handlers.utils.wallet import get_pay_link
-from main.keyboards.commands import cancel_kb, resources
+from main.keyboards.commands import resources
 from main.keyboards.pay import get_inline_keyboard_from_buttons
 from main.utils import MenuState, callback_data_util, is_has_censor
 
@@ -84,24 +84,13 @@ async def callbacks_variations(callback: types.CallbackQuery):
     await telegram_user.asave()
 
     if action == "V1":
-        res = await send_variation_trigger(variation_index="1", queue=queue)
+        await send_variation_trigger(variation_index="1", queue=queue, message=callback.message)
     elif action == "V2":
-        res = await send_variation_trigger(variation_index="2", queue=queue)
+        await send_variation_trigger(variation_index="2", queue=queue, message=callback.message)
     elif action == "V3":
-        res = await send_variation_trigger(variation_index="3", queue=queue)
+        await send_variation_trigger(variation_index="3", queue=queue, message=callback.message)
     elif action == "V4":
-        res = await send_variation_trigger(variation_index="4", queue=queue)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+        await send_variation_trigger(variation_index="4", queue=queue, message=callback.message)
 
     await callback.answer()
 
@@ -112,7 +101,7 @@ async def callbacks_confirm_upsamples_v5(callback: types.CallbackQuery):
     builder = InlineKeyboardBuilder()
     builder.row(
         types.InlineKeyboardButton(text="ДА!", callback_data=f"_v5_{action}"),
-        types.InlineKeyboardButton(text="НЕТ!", callback_data=f"_v5_cancel"),
+        types.InlineKeyboardButton(text="НЕТ!", callback_data="_v5_cancel"),
     )
     await bot.send_document(
         chat_id=callback.message.chat.id,
@@ -164,18 +153,9 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    res = await send_upsample_trigger(upsample_index="1", queue=queue, version=action)
+    await send_upsample_trigger(upsample_index="1", queue=queue, version=action, message=callback.message)
 
-    if res.ok:
-        telegram_user.balance -= cost
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+    await callback.answer()
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("U"))
@@ -215,24 +195,13 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     await callback.message.answer(help_message)
 
     if action == "U1":
-        res = await send_upsample_trigger(upsample_index="1", queue=queue)
+        await send_upsample_trigger(upsample_index="1", queue=queue, message=callback.message)
     elif action == "U2":
-        res = await send_upsample_trigger(upsample_index="2", queue=queue)
+        await send_upsample_trigger(upsample_index="2", queue=queue, message=callback.message)
     elif action == "U3":
-        res = await send_upsample_trigger(upsample_index="3", queue=queue)
+        await send_upsample_trigger(upsample_index="3", queue=queue, message=callback.message)
     elif action == "U4":
-        res = await send_upsample_trigger(upsample_index="4", queue=queue)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+        await send_upsample_trigger(upsample_index="4", queue=queue, message=callback.message)
 
     await callback.answer()
 
@@ -260,21 +229,9 @@ async def callback_reset(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    res = await send_reset_trigger(
-        message_id=queue.discord_message_id,
-        message_hash=queue.message_hash,
+    await send_reset_trigger(
+        message_id=queue.discord_message_id, message_hash=queue.message_hash, message=callback.message
     )
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
 
     await callback.answer()
 
@@ -305,20 +262,9 @@ async def callback_vary(callback: types.CallbackQuery):
     await telegram_user.asave()
 
     if action == "strong":
-        res = await send_vary_trigger(vary_type="high_variation", queue=queue)
+        await send_vary_trigger(vary_type="high_variation", queue=queue, message=callback.message)
     elif action == "subtle":
-        res = await send_vary_trigger(vary_type="low_variation", queue=queue)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+        await send_vary_trigger(vary_type="low_variation", queue=queue, message=callback.message)
 
     await callback.answer()
 
@@ -348,20 +294,9 @@ async def callback_zoom(callback: types.CallbackQuery):
     telegram_user.state = UserStateEnum.PENDING
 
     if action == "2":
-        res = await send_zoom_trigger(queue=queue, zoomout=1)
+        await send_zoom_trigger(queue=queue, zoomout=1, message=callback.message)
     elif action == "1.5":
-        res = await send_zoom_trigger(queue=queue, zoomout=action)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+        await send_zoom_trigger(queue=queue, zoomout=action, message=callback.message)
 
     await callback.answer()
 
@@ -390,18 +325,7 @@ async def callback_pan(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    res = await send_pan_trigger(queue=queue, direction=action)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+    await send_pan_trigger(queue=queue, direction=action)
 
     await callback.answer()
 
@@ -423,7 +347,7 @@ async def callback_pay(callback: types.CallbackQuery):
             customer_id=str(callback.from_user.id),
             chat_id=str(callback.message.chat.id),
             token_count=int(token),
-            externalId=str(callback.message.message_id)
+            externalId=str(callback.message.message_id),
         )
 
         if not pay_link:
@@ -464,20 +388,9 @@ async def callbacks_describe(callback: types.CallbackQuery):
         logger.debug(callback.message.caption)
         logger.debug(prompt)
 
-        res = await imagine_trigger(message=callback.message, prompt=prompt)
+        await imagine_trigger(message=callback.message, prompt=prompt)
     elif callback.data == "reset":
-        res = await describe_reset_trigger(message_id=telegram_user.chat_id)
-
-    if res.ok:
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
-            telegram_user.role = UserRoleEnum.BASE
-        await telegram_user.asave()
-        await callback.message.answer("Идет генирация... ⌛\n")
-    else:
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        await callback.message.answer("Не удалось отправить запрос")
+        await describe_reset_trigger(message_id=telegram_user.chat_id, message=callback.message)
 
     await callback.answer()
 
@@ -703,16 +616,16 @@ async def suggestion_callback(callback: types.CallbackQuery):
         res = await imagine_trigger(callback.message, prompt)
         await callback.answer(cache_time=2000)
 
-        if res.ok:
-            user.balance -= 2
-            if user.balance < 5:
-                user.role = UserRoleEnum.BASE
-            await user.asave()
-            await callback.message.answer("Идет генирация... ⌛\n")
-        else:
-            user.state = UserStateEnum.READY
-            await user.asave()
-            await callback.message.answer("Не удалось отправить запрос")
+        # if res.ok:
+        user.balance -= 2
+        if user.balance < 5:
+            user.role = UserRoleEnum.BASE
+        await user.asave()
+        await callback.message.answer("Идет генирация... ⌛")
+        # else:
+        #     user.state = UserStateEnum.READY
+        #     await user.asave()
+        #     await callback.message.answer("Не удалось отправить запрос")
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("dalle"))

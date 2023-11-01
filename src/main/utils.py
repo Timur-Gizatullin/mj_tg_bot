@@ -4,7 +4,7 @@ import requests
 from aiogram.fsm.state import State, StatesGroup
 from translate import Translator
 
-from main.handlers.utils.interactions import ATTACHMENTS_URL
+from main.handlers.utils.const import ATTACHMENTS_URL
 
 
 async def is_has_censor(message: str, censor_list: list[str]) -> bool:

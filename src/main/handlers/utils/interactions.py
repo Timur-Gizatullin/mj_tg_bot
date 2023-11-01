@@ -3,13 +3,11 @@ from typing import Any
 import requests
 from loguru import logger
 
+from main.handlers.queue import QueueHandler
+from main.handlers.utils.const import INTERACTION_URL
 from main.handlers.utils.mj_user import MjUserTokenQueue
 from main.models import Blend, Prompt
 from t_bot.settings import CHANNEL_ID, GUILD_ID
-
-INTERACTION_URL = "https://discord.com/api/v9/interactions"
-ATTACHMENTS_URL = "https://discord.com/api/v9/channels/1160854172049080415/attachments"
-MESSAGES_URL = "https://discord.com/api/v9/channels/1160854172049080415/messages"
 
 mj_user_token_queue = MjUserTokenQueue()
 
@@ -27,7 +25,7 @@ def _trigger_payload(type_: int, data: dict[str, Any], **kwargs) -> dict[str, An
     return payload
 
 
-async def send_variation_trigger(variation_index: str, queue: Prompt):
+async def send_variation_trigger(variation_index: str, queue: Prompt, message):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -38,17 +36,16 @@ async def send_variation_trigger(variation_index: str, queue: Prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="variation")
 
 
-async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str = ""):
+async def send_upsample_trigger(upsample_index: str, queue: Prompt, message, version: str = ""):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
     }
     solo = "::SOLO" if version != "" else ""
+    action = "upsample" if version == "" else f"upscale_{version}"
     payload = _trigger_payload(
         3,
         {"component_type": 2, "custom_id": f"MJ::JOB::upsample{version}::{upsample_index}::{queue.message_hash}{solo}"},
@@ -57,12 +54,10 @@ async def send_upsample_trigger(upsample_index: str, queue: Prompt, version: str
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action=action)
 
 
-async def send_reset_trigger(message_id: str, message_hash: str):
+async def send_reset_trigger(message_id: str, message_hash: str, message):
     kwargs = {
         "message_flags": 0,
         "message_id": message_id,
@@ -73,12 +68,10 @@ async def send_reset_trigger(message_id: str, message_hash: str):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="reroll")
 
 
-async def send_vary_trigger(vary_type: str, queue: Prompt):
+async def send_vary_trigger(vary_type: str, queue: Prompt, message):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -89,12 +82,10 @@ async def send_vary_trigger(vary_type: str, queue: Prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="vary")
 
 
-async def send_zoom_trigger(zoomout: str, queue: Prompt):
+async def send_zoom_trigger(zoomout: str, queue: Prompt, message):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -107,12 +98,10 @@ async def send_zoom_trigger(zoomout: str, queue: Prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="zoom")
 
 
-async def send_pan_trigger(direction: str, queue: Prompt):
+async def send_pan_trigger(direction: str, queue: Prompt, message):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -123,9 +112,7 @@ async def send_pan_trigger(direction: str, queue: Prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="pan")
 
 
 async def imagine_trigger(message, prompt):
@@ -143,22 +130,10 @@ async def imagine_trigger(message, prompt):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    help_message = (
-        "🟢Кнопки U1, U2, U3, U4 - предназначены для увеличения "
-        "картинки под соответсвующим номером в высоком разрешении;\n"
-        "🔴Кнопки V1, V2, V3, V4 - предназначены для генерации 4 новых "
-        "изображений исходной с картинкой под соответсвующим номером;\n"
-        "🔁Кнопка предназначена для генерации 4 новых изображений отличающихся по стилистике от первой генерации."
-    )
-
-    await message.answer(help_message)
-
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="imagine")
 
 
-async def describe_reset_trigger(message_id: str):
+async def describe_reset_trigger(message_id: str, message):
     kwargs = {
         "message_flags": 0,
         "message_id": message_id,
@@ -167,9 +142,7 @@ async def describe_reset_trigger(message_id: str):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")
 
 
 async def blend_trigger(blends: list[Blend]):

@@ -9,8 +9,8 @@ from decouple import config
 from discord.message import Message
 from loguru import logger
 
-from main.enums import UserStateEnum
-from main.keyboards.commands import get_commands_keyboard, resources
+from main.handlers.queue import QueueHandler
+from main.keyboards.commands import resources
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -62,7 +62,7 @@ class DiscordMiddleWare(discord.Client):
             logger.debug("Message content is empty")
             return
 
-        user: User = await User.objects.get_user_by_chat_id(chat_id)
+        await User.objects.get_user_by_chat_id(chat_id)
 
         if len(message.attachments) == 0:
             return
@@ -104,9 +104,9 @@ class DiscordMiddleWare(discord.Client):
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )
 
+        await QueueHandler.exclude_queue(chat_id, telegram_user=telegram_user)
+
         await bot.send_message(chat_id=chat_id, text=f"Баланс в токенах: {telegram_user.balance}\n\n{resources}")
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
 
 
 if __name__ == "__main__":

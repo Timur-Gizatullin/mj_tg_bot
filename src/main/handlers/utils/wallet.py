@@ -13,7 +13,9 @@ WALLET_HEADERS = {
 }
 
 
-async def get_pay_link(amount: str, description: str, customer_id: str, chat_id: str, token_count: int, externalId) -> str | None:
+async def get_pay_link(
+    amount: str, description: str, customer_id: str, chat_id: str, token_count: int, externalId
+) -> str | None:
     payload = {
         "amount": {
             "currencyCode": "USD",

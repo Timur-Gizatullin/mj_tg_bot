@@ -1,5 +1,4 @@
 import openai
-import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -11,8 +10,8 @@ from loguru import logger
 
 from main.constants import BOT_HOST
 from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
+from main.handlers.queue import QueueHandler
 from main.handlers.utils.interactions import (
-    INTERACTION_URL,
     _trigger_payload,
     blend_trigger,
     mj_user_token_queue,
@@ -28,7 +27,6 @@ from main.models import (
     User,
 )
 from main.utils import (
-    BlendStateMachine,
     MenuState,
     callback_data_util,
     is_has_censor,
@@ -341,12 +339,7 @@ async def describe_handler(message: Message, user: User):
         },
     )
 
-    if not requests.post(INTERACTION_URL, json=payload, headers=header).ok:
-        logger.error("Check out ds version")
-        await message.answer("Что-то пошло не так")
-        user.state = UserStateEnum.READY
-        await user.asave()
-        return
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe")
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
     await new_describe.asave()
