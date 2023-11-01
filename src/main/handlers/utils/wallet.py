@@ -13,14 +13,14 @@ WALLET_HEADERS = {
 }
 
 
-async def get_pay_link(amount: str, description: str, customer_id: str, chat_id: str, token_count: int) -> str | None:
+async def get_pay_link(amount: str, description: str, customer_id: str, chat_id: str, token_count: int, externalId) -> str | None:
     payload = {
         "amount": {
             "currencyCode": "USD",
             "amount": amount,
         },
         "description": description,
-        "externalId": "XXX-YYY-ZZZ",  # ID счета на оплату в вашем боте #TODO
+        "externalId": externalId,  # ID счета на оплату в вашем боте #TODO
         "timeoutSeconds": 60 * 60 * 24,
         "customerTelegramUserId": customer_id,
         "returnUrl": "https://t.me/MJBOTTESTbot",
@@ -29,15 +29,15 @@ async def get_pay_link(amount: str, description: str, customer_id: str, chat_id:
 
     response = requests.post(WALLET_CREATE_ORDER, json=payload, headers=WALLET_HEADERS, timeout=60)
     data = response.json()
-
+    logger.debug(data)
     if (response.status_code != 200) or (data["status"] not in ["SUCCESS", "ALREADY"]):
         logger.warning("# code: {} json: {}".format(response.status_code, data))
         return None
 
     pay_id = data["data"]["id"]
     user: User = await User.objects.get_user_by_chat_id(chat_id)
-
+    logger.debug("create pay")
     pay_dto = Pay(amount=amount, token_count=token_count, pay_id=pay_id, user=user)
     await pay_dto.asave()
-
+    logger.debug("return paylink")
     return data["data"]["payLink"]

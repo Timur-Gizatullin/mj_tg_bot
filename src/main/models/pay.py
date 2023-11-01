@@ -13,7 +13,7 @@ class PayManager(models.Manager):
 class Pay(models.Model):
     amount: Decimal = models.DecimalField(null=False, decimal_places=4, max_digits=12)
     token_count: int = models.IntegerField(null=True)
-    pay_id: int = models.IntegerField(null=True)
+    pay_id: int = models.CharField(null=True)
     is_verified = models.BooleanField(null=True, default=False)
     user = models.ForeignKey("User", on_delete=models.DO_NOTHING, related_name="payments")
     created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True)

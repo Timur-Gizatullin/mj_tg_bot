@@ -413,7 +413,7 @@ async def callback_pay(callback: types.CallbackQuery):
     token = callback.data.split("_")[-1]
 
     amount = str(float(int(amount) // 100))
-
+    logger.debug(action)
     if action == "wallet":
         desc = "Get tokens for Mid Journey telegram bot"
 
@@ -423,6 +423,7 @@ async def callback_pay(callback: types.CallbackQuery):
             customer_id=str(callback.from_user.id),
             chat_id=str(callback.message.chat.id),
             token_count=int(token),
+            externalId=str(callback.message.message_id)
         )
 
         if not pay_link:
@@ -433,7 +434,7 @@ async def callback_pay(callback: types.CallbackQuery):
         pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
         key_board = get_inline_keyboard_from_buttons((pay_button,))
 
-        await callback.message.answer(f"Get {token} tokens for {amount}$\n<b>Enjoy!</b>", reply_markup=key_board)
+        await callback.message.answer(f"Get {token} tokens for {amount}$", reply_markup=key_board)
         await callback.answer()
 
 
