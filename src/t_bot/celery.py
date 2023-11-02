@@ -18,9 +18,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
 from main.handlers.utils.wallet import WALLET_CREATE_ORDER, WALLET_HEADERS
-from main.models import Pay
+from main.models import Pay, User
 from main.handlers.queue import r_queue
-from main.enums import UserRoleEnum
+from main.enums import UserRoleEnum, UserStateEnum
 
 app = Celery("t_bot")
 
@@ -44,6 +44,9 @@ def check_queue():
         diff = datetime.now()-datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
         logger.info(diff)
         if diff >= timedelta(seconds=time):
+            user = User.objects.filter(chat_id=j_chat_id).first()
+            user.state = UserStateEnum.READY
+            user.save()
             r_queue.lpop("queue", j_chat_id)
 
 @app.task()
