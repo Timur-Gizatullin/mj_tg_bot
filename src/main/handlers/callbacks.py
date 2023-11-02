@@ -66,7 +66,7 @@ async def callbacks_variations(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -137,7 +137,7 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     else:
         cost = 8
 
-    if telegram_user.balance - cost <= 0:
+    if telegram_user.balance - cost < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -166,7 +166,7 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -213,7 +213,7 @@ async def callback_reset(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -244,7 +244,7 @@ async def callback_vary(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -277,7 +277,7 @@ async def callback_zoom(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -309,7 +309,7 @@ async def callback_pan(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -325,7 +325,7 @@ async def callback_pan(callback: types.CallbackQuery):
 
     telegram_user.state = UserStateEnum.PENDING
 
-    await send_pan_trigger(queue=queue, direction=action)
+    await send_pan_trigger(queue=queue, direction=action, message=callback.message)
 
     await callback.answer()
 
@@ -367,7 +367,7 @@ async def callbacks_describe(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
 
-    if telegram_user.balance <= 0:
+    if telegram_user.balance < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -570,7 +570,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
     await user.asave()
 
     if action == "gpt":
-        if user.balance - 1 <= 0:
+        if user.balance - 1 < 0:
             builder = InlineKeyboardBuilder()
             answer = f"Ваш баланс {user.balance}\n"
             lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -603,7 +603,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await callback.answer(cache_time=4000)
         return
     if action == "stay":
-        if user.balance - 2 <= 0:
+        if user.balance - 2 < 0:
             builder = InlineKeyboardBuilder()
             answer = f"Ваш баланс {user.balance}\n"
             lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -665,7 +665,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     await user.asave()
 
     if action == "gpt":
-        if user.balance - 1 <= 0:
+        if user.balance - 1 < 0:
             builder = InlineKeyboardBuilder()
             answer = f"Ваш баланс {user.balance}\n"
             lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -698,7 +698,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         await callback.answer(cache_time=100)
         return
     if action == "stay":
-        if user.balance - 2 <= 0:
+        if user.balance - 2 < 0:
             builder = InlineKeyboardBuilder()
             answer = f"Ваш баланс {user.balance}\n"
             lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -742,7 +742,7 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
@@ -774,7 +774,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    if telegram_user.balance - 2 <= 0:
+    if telegram_user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
         answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
