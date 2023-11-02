@@ -58,6 +58,7 @@ def check_pays():
         logger.debug(response.text)
         if response.ok:
             unverified_pay.is_verified = True
+            unverified_pay.user.balance += unverified_pay.token_count
             unverified_pay.save()
             message = f"Транзакция прошла успешно, ваш баланс {unverified_pay.user.balance}"
             requests.post(
@@ -65,6 +66,8 @@ def check_pays():
             )
             if unverified_pay.user.balance > 5:
                 unverified_pay.user.role = UserRoleEnum.BASE
+            else:
+                unverified_pay.user.role = UserRoleEnum.PREMIUM
 
 
 app.config_from_object(settings, namespace="CELERY")
