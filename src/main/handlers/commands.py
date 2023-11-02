@@ -48,6 +48,38 @@ async def is_user_exist(chat_id: str) -> User | None:
     return user
 
 
+@dp.message(F.successful_payment)
+async def successful_payment(message: types.Message):
+    logger.info("SUCCESSFUL PAYMENT:")
+    payment_info = message.successful_payment
+    amount = payment_info.total_amount // 100
+    tokens = int(payment_info.invoice_payload)
+    logger.info(payment_info)
+    try:
+        user: User = await User.objects.get_user_by_chat_id(message.chat.id)
+        user.balance += tokens
+        await user.asave()
+
+        pay_dto = Pay(
+            amount=amount,
+            token_count=tokens,
+            pay_id=payment_info.telegram_payment_charge_id,
+            user=user,
+            is_verified=True,
+        )
+        await pay_dto.asave()
+
+        await bot.send_message(message.chat.id, f"Платеж на сумму {amount} {payment_info.currency} прошел успешно!!!")
+    except Exception as e:
+        logger.error(e)
+        admins: list[User] = await User.objects.get_admins()
+        for admin in admins:
+            await bot.send_message(
+                chat_id=admin.chat_id,
+                text=f"Чат с номером {message.chat.id} успешно оплатитл, но из-за непредвиденной ошибки, токены не начислились, id оплаты {payment_info.telegram_payment_charge_id}",
+            )
+
+
 @dp.message(CommandStart(deep_link=True))
 async def deep_start(message: Message, command: CommandObject, state: FSMContext):
     key = command.args
@@ -335,32 +367,6 @@ async def describe_handler(message: Message, user: User):
 @dp.pre_checkout_query(lambda query: True)
 async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
-
-
-@dp.message(F.successful_payment)
-async def successful_payment(message: types.Message):
-    logger.info("SUCCESSFUL PAYMENT:")
-    payment_info = message.successful_payment
-    amount = payment_info.total_amount // 100
-    tokens = int(payment_info.invoice_payload)
-    logger.info(payment_info)
-    try:
-        user: User = await User.objects.get_user_by_chat_id(message.chat.id)
-        user.balance += tokens
-        await user.asave()
-
-        pay_dto = Pay(
-            amount=amount, token_count=tokens, pay_id=payment_info.telegram_payment_charge_id, user=user, is_verified=True
-        )
-        await pay_dto.asave()
-
-        await bot.send_message(message.chat.id, f"Платеж на сумму {amount} {payment_info.currency} прошел успешно!!!")
-    except Exception as e:
-        logger.error(e)
-        admins: list[User] = await User.objects.get_admins()
-        for admin in admins:
-            await bot.send_message(chat_id=admin.chat_id, text=f"Чат с номером {message.chat.id} успешно оплатитл, но из-за непредвиденной ошибки, токены не начислились, id оплаты {payment_info.telegram_payment_charge_id}")
-
 
 
 @dp.message()
