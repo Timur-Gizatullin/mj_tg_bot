@@ -42,6 +42,9 @@ class DiscordMiddleWare(discord.Client):
             file_name = image_proxy_url.split("/")[-1]
             describe_object: Describe = await Describe.objects.get_describe_by_file_name(file_name)
             logger.debug("Send edited message to telegram")
+            user = await User.objects.get_user_by_chat_id(describe_object.chat_id)
+            await QueueHandler.exclude_queue(describe_object.chat_id, telegram_user=user)
+
             await bot.send_photo(
                 chat_id=describe_object.chat_id,
                 photo=image_proxy_url,
