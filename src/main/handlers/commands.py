@@ -1,4 +1,5 @@
 import openai
+import requests
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -8,9 +9,10 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from decouple import config
 from loguru import logger
 
-from main.constants import BOT_HOST
+from main.constants import BOT_HOST, ATTACHMENT_STORAGE_URL
 from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
 from main.handlers.queue import QueueHandler
+from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import (
     _trigger_payload,
     blend_trigger,
@@ -151,8 +153,11 @@ async def mj_handler(message: Message) -> None:
     logger.debug(message.media_group_id)
     if message.text and not message.photo and not message.media_group_id:
         await handle_imagine(message)
-    elif message.photo and not message.text and not message.media_group_id:
+    elif message.photo and not message.text and not message.media_group_id and not message.caption:
         await describe_handler(message, user)
+    elif message.photo and message.caption and not message.media_group_id:
+        await based_on_photo_imagine(message=message)
+        logger.debug("IMAGINE WITH PHOTO")
     elif message.media_group_id and not message.text:
         # blends = await Blend.objects.get_blends_by_group_id(message.media_group_id)
         # builder = InlineKeyboardBuilder()
@@ -251,13 +256,13 @@ async def dale_handler(message: Message):
     await user.asave()
 
 
-async def handle_imagine(message):
+async def handle_imagine(message, img_url: str | None = None):
     suggestion = (
         "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
         "(Стоимость 1 токен)"
     )
-
-    callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
+    text = message.caption if img_url else message.text
+    callback_data_util[f"{message.chat.id}-{message.message_id}"] = {"text": text, "img": img_url}
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
         types.InlineKeyboardButton(
@@ -317,6 +322,54 @@ async def blend_state_handler(message: Message, group_id):
 
     user.state = UserStateEnum.READY
     await user.asave()
+
+
+async def based_on_photo_imagine(message: Message):
+    file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+    downloaded_file = await bot.download_file(file_path=file.file_path)
+    token = await mj_user_token_queue.get_sender_token()
+    header = {"authorization": token, "Content-Type": "application/json"}
+
+    attachment = await upload_file(file=file, header=header)
+    if not attachment:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    if not (await put_file(downloaded_file=downloaded_file, attachment=attachment)).ok:
+        await message.answer("Не удалось загрузить файлы")
+        return
+
+    upload_filename = attachment["upload_filename"].split("/")[-1]
+    logger.debug(attachment)
+    logger.debug(upload_filename)
+
+    header = {"authorization": token, "Content-Type": "application/json"}
+    payload = {
+        "content": "",
+        "channel_id": "1160854221990662146",
+        "type": 0,
+        "sticker_ids": [],
+        "attachments": [
+            {
+                "id": "0",
+                "filename": upload_filename,
+                "uploaded_filename": attachment["upload_filename"],
+            }
+        ],
+    }
+
+    image_data = requests.post(url=MESSAGES_URL, json=payload, headers=header)
+
+    if image_data.ok:
+        image_data = image_data.json()
+    else:
+        logger.error(image_data.text)
+        await message.answer("Не удалось загрузить фото")
+        return
+
+    img_url = image_data["attachments"][0]["proxy_url"]
+
+    await handle_imagine(message=message, img_url=img_url)
 
 
 async def describe_handler(message: Message, user: User):

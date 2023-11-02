@@ -540,7 +540,9 @@ async def pay_options_callback(callback: types.CallbackQuery):
 async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_id = callback.data.split("_")[-1]
-    message = callback_data_util.get(message_id)
+    data = callback_data_util.get(message_id)
+    logger.debug(data)
+    message = data["text"]
     if not message:
         await callback.message.answer("Сообщение удалено из кэша, введите ваш промпт снова")
         await callback.answer()
@@ -600,18 +602,25 @@ async def suggestion_callback(callback: types.CallbackQuery):
         prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
-        buttons = [types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-gpt_{i}") for i in range(1, 4)]
+        buttons = [
+            types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-gpt_{i}_{callback.message.chat.id}{callback.message.message_id}")
+            for i in range(1, 4)
+        ]
         builder.row(*buttons)
+        logger.debug(data["img"]) #TODO
+        if data["img"]:
+            callback_data_util[f"img{callback.message.chat.id}{callback.message.message_id}"] = data["img"]
+            logger.debug(callback_data_util)
+
+        await callback.message.answer(
+            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
+        )
 
         user.balance -= 1
         if user.balance < 5:
             user.role = UserRoleEnum.BASE
         user.state = UserStateEnum.READY
         await user.asave()
-
-        await callback.message.answer(
-            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
-        )
         await callback.message.answer(text=f"Баланс в токенах: {user.balance}")
         await callback.answer(cache_time=4000)
         return
@@ -625,6 +634,9 @@ async def suggestion_callback(callback: types.CallbackQuery):
             await callback.answer()
             user.state = UserStateEnum.READY
             await user.asave()
+
+        if data["img"]:
+            prompt = f"{data['img']} {prompt}"
 
         await imagine_trigger(callback.message, prompt)
         await callback.answer(cache_time=2000)
@@ -753,6 +765,8 @@ async def gpt_callback(callback: types.CallbackQuery):
 @callback_router.callback_query(lambda c: c.data.startswith("choose-gpt"))
 async def gpt_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
+    img_id = f"img{callback.data.split('_')[-1]}"
+    logger.debug(img_id)
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if telegram_user.balance - 2 < 0:
@@ -776,6 +790,14 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
         prompt = callback.message.text.split("\n\n")[choose - 1][2:]
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
+
+    if img_id:
+        img_url = callback_data_util.get(img_id)
+        if not img_url:
+            await callback.message.answer("Не удалось получить изображение, попробуйте снова")
+            await callback.answer()
+            return
+        prompt = f"{img_url} {prompt}"
 
     await imagine_trigger(message=callback.message, prompt=prompt)
 
