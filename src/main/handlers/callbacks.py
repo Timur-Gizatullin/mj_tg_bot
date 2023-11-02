@@ -446,7 +446,7 @@ async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
         answer = f"Ваш баланс {current_user.balance}\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
-        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.message.answer(answer, reply_markup=builder.as_markup(), parse_mode=ParseMode.HTML)
 
         await callback.answer()
         return
@@ -458,7 +458,7 @@ async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
         answer = (
             "За каждого реферала Вам будет начислено 6 токенов\n\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
         )
-        await callback.message.answer(answer)
+        await callback.message.answer(answer, parse_mode=ParseMode.HTML)
 
         await callback.answer()
         return

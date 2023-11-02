@@ -25,7 +25,7 @@ class UserManager(AbstractUserManager):
         user = self.filter(telegram_username=telegram_username, chat_id=chat_id).first()
         if user:
             return user
-        user = User(telegram_username=telegram_username, username=telegram_username, chat_id=chat_id)
+        user = User(telegram_username=telegram_username, chat_id=chat_id)
         user.save()
 
         return user
@@ -51,7 +51,7 @@ class UserManager(AbstractUserManager):
 
 class User(AbstractUser):
     telegram_username: str = models.CharField(unique=True, null=True)
-    chat_id: str = models.IntegerField(unique=True, null=True)
+    chat_id: str = models.CharField(unique=True, null=True)
     balance: int = models.IntegerField(null=False, default=15)
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE)

@@ -101,20 +101,6 @@ async def help_handler(message: Message, state) -> None:
     await message.answer(help_message)
 
 
-@dp.message(Command("referral"))
-async def create_referral(message: Message, state) -> None:
-    if not await is_user_exist(chat_id=str(message.chat.id)):
-        await message.answer("Напишите боту /start")
-        return
-
-    referrer = await User.objects.get_user_by_username(username=message.from_user.username)
-
-    referral = await Referral.objects.create_referral(referrer=referrer)
-    referral_link = f"{BOT_HOST}{referral.key}"
-
-    await message.answer(f"Ваша ссылка: {referral_link}")
-
-
 @dp.message(MenuState.mj)
 async def mj_handler(message: Message) -> None:
     user = await is_user_exist(chat_id=str(message.chat.id))
