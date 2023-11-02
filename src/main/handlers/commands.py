@@ -1,6 +1,6 @@
 import openai
-from aiogram import Bot, Dispatcher, types
-from aiogram.enums import ParseMode
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -22,6 +22,7 @@ from main.models import (
     Blend,
     Describe,
     GptContext,
+    Pay,
     Referral,
     TelegramAnswer,
     User,
@@ -329,6 +330,37 @@ async def describe_handler(message: Message, user: User):
 
     new_describe = Describe(file_name=upload_filename.split("/")[-1], chat_id=str(message.chat.id))
     await new_describe.asave()
+
+
+@dp.pre_checkout_query(lambda query: True)
+async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+
+
+@dp.message(F.successful_payment)
+async def successful_payment(message: types.Message):
+    logger.info("SUCCESSFUL PAYMENT:")
+    payment_info = message.successful_payment
+    amount = payment_info.total_amount // 100
+    tokens = int(payment_info.invoice_payload)
+    logger.info(payment_info)
+    try:
+        user: User = await User.objects.get_user_by_chat_id(message.chat.id)
+        user.balance += tokens
+        await user.asave()
+
+        pay_dto = Pay(
+            amount=amount, token_count=tokens, pay_id=payment_info.telegram_payment_charge_id, user=user, is_verified=True
+        )
+        await pay_dto.asave()
+
+        await bot.send_message(message.chat.id, f"Платеж на сумму {amount} {payment_info.currency} прошел успешно!!!")
+    except Exception as e:
+        logger.error(e)
+        admins: list[User] = await User.objects.get_admins()
+        for admin in admins:
+            await bot.send_message(chat_id=admin.chat_id, text=f"Чат с номером {message.chat.id} успешно оплатитл, но из-за непредвиденной ошибки, токены не начислились, id оплаты {payment_info.telegram_payment_charge_id}")
+
 
 
 @dp.message()

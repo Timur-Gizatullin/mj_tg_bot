@@ -10,6 +10,9 @@ from main.enums import UserRoleEnum, UserStateEnum
 
 class UserManager(AbstractUserManager):
     @sync_to_async()
+    def get_admins(self):
+        return list(self.filter(role=UserRoleEnum.ADMIN).all())
+    @sync_to_async()
     def get_user_by_username(self, username: str) -> "User":
         return self.filter(telegram_username=username).first()
 

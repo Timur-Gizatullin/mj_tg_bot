@@ -17,10 +17,10 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
+from main.enums import UserRoleEnum, UserStateEnum
+from main.handlers.queue import r_queue
 from main.handlers.utils.wallet import WALLET_CREATE_ORDER, WALLET_HEADERS
 from main.models import Pay, User
-from main.handlers.queue import r_queue
-from main.enums import UserRoleEnum, UserStateEnum
 
 app = Celery("t_bot")
 
@@ -34,20 +34,21 @@ def setup_periodic_tasks(sender, **kwargs):
 @app.task()
 def check_queue():
     queue = r_queue.lrange("queue", 0, -1)
-    time = len(queue)*30+120
+    time = len(queue) * 30 + 120
     logger.info(len(queue))
     for chat_id in queue:
         j_chat_id = json.loads(chat_id)
         queue_data = r_queue.lrange(j_chat_id, 0, -1)
         queue_data = json.loads(queue_data[-1])
         start = queue_data["start"]
-        diff = datetime.now()-datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
+        diff = datetime.now() - datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         logger.info(diff)
         if diff >= timedelta(seconds=time):
             user = User.objects.filter(chat_id=j_chat_id).first()
             user.state = UserStateEnum.READY
             user.save()
             r_queue.lpop("queue", j_chat_id)
+
 
 @app.task()
 def check_pays():

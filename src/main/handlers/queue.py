@@ -92,12 +92,28 @@ class QueueHandler:
         await user.asave()
 
         if r_queue.llen("queue") >= 3:
-            data = json.dumps({"payload": payload, "header": header, "action": action, "chat_id": message.chat.id, "start": datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
+            data = json.dumps(
+                {
+                    "payload": payload,
+                    "header": header,
+                    "action": action,
+                    "chat_id": message.chat.id,
+                    "start": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
             r_queue.rpush("release", data)
 
             await message.answer(text="Запрос добавлен в очередь")
         else:
-            data = json.dumps({"payload": payload, "header": header, "action": action, "chat_id": message.chat.id, "start": datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
+            data = json.dumps(
+                {
+                    "payload": payload,
+                    "header": header,
+                    "action": action,
+                    "chat_id": message.chat.id,
+                    "start": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
             r_queue.rpush(f"queue", message.chat.id)
             r_queue.rpush(f"{message.chat.id}", data)
 

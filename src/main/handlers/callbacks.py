@@ -9,6 +9,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from decouple import config
 from loguru import logger
 
 from main.constants import BOT_HOST
@@ -335,14 +336,13 @@ async def callback_pay(callback: types.CallbackQuery):
     action = callback.data.split("_")[-3]
     amount = callback.data.split("_")[-2]
     token = callback.data.split("_")[-1]
+    desc = "Get tokens for Mid Journey telegram bot"
 
-    amount = str(float(int(amount) // 100))
+    usdt_amount = str(float(int(amount) // 100))
     logger.debug(action)
     if action == "wallet":
-        desc = "Get tokens for Mid Journey telegram bot"
-
         pay_link = await get_pay_link(
-            amount=amount,
+            amount=usdt_amount,
             description=desc,
             customer_id=str(callback.from_user.id),
             chat_id=str(callback.message.chat.id),
@@ -358,7 +358,20 @@ async def callback_pay(callback: types.CallbackQuery):
         pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
         key_board = get_inline_keyboard_from_buttons((pay_button,))
 
-        await callback.message.answer(f"Get {token} tokens for {amount}$", reply_markup=key_board)
+        await callback.message.answer(f"Get {token} tokens for {usdt_amount}$", reply_markup=key_board)
+        await callback.answer()
+    if action == "yokasa":
+        price = types.LabeledPrice(label=f"Вы покупаете {token} токенов", amount=int(amount) * 100)
+        await bot.send_invoice(
+            callback.message.chat.id,
+            title="Подписка на бота",
+            description=desc,
+            provider_token=config("PAYMENTS_PROVIDER_TOKEN"),
+            currency="rub",
+            is_flexible=False,
+            prices=[price],
+            payload=f"{token}",
+        )
         await callback.answer()
 
 
@@ -511,9 +524,9 @@ async def pay_options_callback(callback: types.CallbackQuery):
     answer = f"Платеж на {token} успешно создан"
     builder = InlineKeyboardBuilder()
     buttons = (
-        # types.InlineKeyboardButton(
-        #     text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"
-        # ),
+        types.InlineKeyboardButton(
+            text="Любой картой РФ (Юкасса)", callback_data=f"pay_choose_yokasa_{amount}_{token}"
+        ),
         types.InlineKeyboardButton(text="Telegram Wallet", callback_data=f"pay_choose_wallet_{amount}_{token}"),
     )
     for button in buttons:
