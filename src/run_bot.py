@@ -6,11 +6,10 @@ import sys
 import django
 from loguru import logger
 
-from main.handlers.queue import r_queue
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
+from main.handlers.queue import r_queue
 from main.handlers.callbacks import callback_router  # noqa: E402
 from main.handlers.commands import bot, dp  # noqa: E402
 

@@ -1,11 +1,12 @@
+import json
 import logging
 import os
+from datetime import datetime, timedelta
 
 import requests
 from celery import Celery
 from django.conf import settings
 
-from main.enums import UserRoleEnum
 from t_bot.settings import TELEGRAM_TOKEN
 
 logger = logging.getLogger("django")
@@ -18,14 +19,32 @@ django.setup()
 
 from main.handlers.utils.wallet import WALLET_CREATE_ORDER, WALLET_HEADERS
 from main.models import Pay
+from main.handlers.queue import r_queue
+from main.enums import UserRoleEnum
 
 app = Celery("t_bot")
 
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(10.0, check_pays.s())
+    sender.add_periodic_task(90.0, check_pays.s())
+    sender.add_periodic_task(10.0, check_queue.s())
 
+
+@app.task()
+def check_queue():
+    queue = r_queue.lrange("queue", 0, -1)
+    time = len(queue)*30+120
+    logger.info(len(queue))
+    for chat_id in queue:
+        j_chat_id = json.loads(chat_id)
+        queue_data = r_queue.lrange(j_chat_id, 0, -1)
+        queue_data = json.loads(queue_data[-1])
+        start = queue_data["start"]
+        diff = datetime.now()-datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
+        logger.info(diff)
+        if diff >= timedelta(seconds=time):
+            r_queue.lpop("queue", j_chat_id)
 
 @app.task()
 def check_pays():

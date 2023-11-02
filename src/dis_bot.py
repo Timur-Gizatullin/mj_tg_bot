@@ -9,12 +9,11 @@ from decouple import config
 from discord.message import Message
 from loguru import logger
 
-from main.handlers.queue import QueueHandler
-from main.keyboards.commands import resources
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
+from main.handlers.queue import QueueHandler
+from main.keyboards.commands import resources
 from main.handlers.commands import bot  # noqa: E402
 from main.keyboards.interactions import get_keyboard  # noqa: E402
 from main.models import Describe, Prompt, User  # noqa: E402
