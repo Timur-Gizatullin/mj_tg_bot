@@ -145,7 +145,7 @@ async def describe_reset_trigger(message_id: str, message):
     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")
 
 
-async def blend_trigger(blends: list[Blend]):
+async def blend_trigger(blends: list[Blend], message):
     attachments = []
     i = 0
     for blend in blends:
@@ -191,7 +191,4 @@ async def blend_trigger(blends: list[Blend]):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
-    logger.debug(response.text)
-
-    return response
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")

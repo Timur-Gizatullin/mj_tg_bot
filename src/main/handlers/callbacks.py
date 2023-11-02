@@ -603,11 +603,14 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
         builder = InlineKeyboardBuilder()
         buttons = [
-            types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-gpt_{i}_{callback.message.chat.id}{callback.message.message_id}")
+            types.InlineKeyboardButton(
+                text=f"промпт {i}",
+                callback_data=f"choose-gpt_{i}_{callback.message.chat.id}{callback.message.message_id}",
+            )
             for i in range(1, 4)
         ]
         builder.row(*buttons)
-        logger.debug(data["img"]) #TODO
+        logger.debug(data["img"])  # TODO
         if data["img"]:
             callback_data_util[f"img{callback.message.chat.id}{callback.message.message_id}"] = data["img"]
             logger.debug(callback_data_util)
@@ -851,20 +854,3 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     )
 
     await callback.answer(cache_time=500)
-
-
-@callback_router.callback_query(lambda c: c.data.startswith("blend"))
-async def blend_callback(callback: types.CallbackQuery):
-    action = callback.data.split("_")[-1]
-    user = await is_user_exist(chat_id=str(callback.message.chat.id))
-    if not user:
-        await callback.message.answer("Напишите боту /start")
-        return
-
-    blends = await Blend.objects.get_blends_by_group_id(action)
-
-    response = await blend_trigger(blends)
-    logger.debug(response.text)
-
-    user.state = UserStateEnum.READY
-    await user.asave()

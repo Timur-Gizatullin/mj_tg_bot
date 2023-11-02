@@ -1,7 +1,7 @@
 import openai
 import requests
 from aiogram import Bot, Dispatcher, F, types
-from aiogram.enums import ContentType, ParseMode
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -9,7 +9,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from decouple import config
 from loguru import logger
 
-from main.constants import BOT_HOST, ATTACHMENT_STORAGE_URL
 from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
@@ -43,6 +42,8 @@ bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_previe
 
 openai.api_key = config("OPEN_AI_API_KEY")
 gpt = openai.ChatCompletion
+
+img_handler = {}
 
 
 async def is_user_exist(chat_id: str) -> User | None:
@@ -157,14 +158,7 @@ async def mj_handler(message: Message) -> None:
         await describe_handler(message, user)
     elif message.photo and message.caption and not message.media_group_id:
         await based_on_photo_imagine(message=message)
-        logger.debug("IMAGINE WITH PHOTO")
     elif message.media_group_id and not message.text:
-        # blends = await Blend.objects.get_blends_by_group_id(message.media_group_id)
-        # builder = InlineKeyboardBuilder()
-        # blend_kb = builder.row(
-        #     types.InlineKeyboardButton(text="Перемешать", callback_data=f"blend_{message.media_group_id}")
-        # )
-        # await message.answer(text="Загружаем фото", reply_markup=blend_kb.as_markup())
         # await blend_images_handler(message)
         pass
 
@@ -306,22 +300,13 @@ async def blend_images_handler(message: Message):
         uploaded_filename=upload_filename,
         last_message_id=message.message_id,
     )
+
+    media_list = await Blend.objects.get_blends_by_group_id(message.media_group_id)
+    if media_list:
+        logger.debug(len(media_list))
+        await blend_trigger(media_list, message)
+
     await new_blend.asave()
-
-
-async def blend_state_handler(message: Message, group_id):
-    user = await is_user_exist(chat_id=str(message.chat.id))
-    if not user:
-        await message.answer("Напишите боту /start")
-        return
-
-    blends = await Blend.objects.get_blends_by_group_id(group_id)
-
-    response = await blend_trigger(blends)
-    logger.debug(response.text)
-
-    user.state = UserStateEnum.READY
-    await user.asave()
 
 
 async def based_on_photo_imagine(message: Message):
