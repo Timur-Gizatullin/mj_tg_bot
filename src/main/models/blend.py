@@ -19,9 +19,6 @@ class BlendManager(models.Manager):
         file_name = "".join(file_names)
         logger.debug(file_name)
         blend = self.filter(uploaded_filename=file_name)
-        # for i, file_name in enumerate(file_names):
-        #     if i != 0:
-        #         blend.filter(uploaded_filename__contains=file_names[i])
 
         return blend.first()
 

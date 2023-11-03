@@ -56,10 +56,10 @@ class DiscordMiddleWare(discord.Client):
     async def on_message(self, message: Message):
         if message.author == self.user:
             return
-        if message.content and "#" in message.content:
+        if message.content and message.content.count("#") >= 2:
             prompt = str(message.content).split("**")[1]
             chat_id = str(message.content).split("#")[1].split("#")[0]
-        elif message.content and "#" not in message.content and message.attachments:
+        elif message.content and message.content.count("#") < 2 and message.attachments:
             links = message.content.split("**")[1].split(" ")
             logger.debug(links)
             file_names = []
@@ -70,12 +70,21 @@ class DiscordMiddleWare(discord.Client):
                 file_names.append(file_name)
             blend: Blend = await Blend.objects.get_blend_by_filenames(file_names)
             chat_id = blend.chat_id
+
+            message_hash = message.attachments[0].filename.split("_")[-1].split(".")[0]
+            user: User = await User.objects.get_user_by_chat_id(chat_id)
+            await Prompt.objects.acreate(
+                prompt="BLEND",
+                telegram_chat_id=chat_id,
+                telegram_user=user,
+                discord_message_id=message.id,
+                message_hash=message_hash,
+            )
+
             prompt = None
         else:
             logger.debug("Message content is empty")
             return
-
-        await User.objects.get_user_by_chat_id(chat_id)
 
         if len(message.attachments) == 0:
             return
@@ -100,8 +109,8 @@ class DiscordMiddleWare(discord.Client):
                     buttons.append(child.emoji.name)
 
         keyboard = await get_keyboard(buttons=buttons)
-
-        if prompt:
+        logger.debug(prompt)
+        if prompt is not None:
             await Prompt.objects.acreate(
                 prompt=prompt,
                 telegram_chat_id=chat_id,
