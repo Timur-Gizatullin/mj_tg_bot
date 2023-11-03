@@ -1,6 +1,8 @@
+from datetime import datetime
 from uuid import uuid4
 
 from asgiref.sync import sync_to_async
+
 from django.db import models
 
 from main.models.user import User
@@ -42,6 +44,7 @@ class Referral(models.Model):
     )
     name: str = models.CharField(null=True, blank=True)
     used_count = models.IntegerField(default=int())
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     objects = ReferralManager()
 
