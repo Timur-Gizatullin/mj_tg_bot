@@ -29,6 +29,7 @@ async def main() -> None:
 
     await clear_queues()
 
+    await bot.delete_my_commands()
     await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
 
     await dp.start_polling(bot)
