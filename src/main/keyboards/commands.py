@@ -11,7 +11,7 @@ resources = """
 
 start_buttons = (
     types.InlineKeyboardButton(text="Midjourney", callback_data="start_mj"),
-    types.InlineKeyboardButton(text="DAL-E", callback_data="start_dale"),
+    types.InlineKeyboardButton(text="DALL-E", callback_data="start_dale"),
     types.InlineKeyboardButton(text="GPT", callback_data="start_gpt"),
     types.InlineKeyboardButton(text="Личный кабинат и оплата", callback_data="start_lk"),
     types.InlineKeyboardButton(text="Реферальная ссылка", callback_data="start_ref"),

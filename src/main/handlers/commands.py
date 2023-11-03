@@ -172,12 +172,6 @@ async def mj_handler(message: Message, messages) -> None:
         await describe_handler(message, user)
     elif message.photo and message.caption and not message.media_group_id:
         await based_on_photo_imagine(message=message)
-    elif message.media_group_id and not message.text:
-        await blend_images_handler(message)
-        pass
-
-    user.state = UserStateEnum.READY
-    await user.asave()
 
 
 @dp.message(MenuState.gpt)
@@ -266,7 +260,7 @@ async def dale_handler(message: Message):
 
 async def handle_imagine(message, img_url: str | None = None):
     suggestion = (
-        "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
+        "🌆Хочешь обработать запрос с помощью CHAT GPT, для создания трех вариантов профессиональных промптов?\n"
         "(Стоимость 1 токен)"
     )
     text = message.caption if img_url else message.text

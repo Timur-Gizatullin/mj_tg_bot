@@ -26,7 +26,8 @@ class QueueHandler:
             "картинки под соответсвующим номером в высоком разрешении;\n"
             "🔴Кнопки V1, V2, V3, V4 - предназначены для генерации 4 новых "
             "изображений исходной с картинкой под соответсвующим номером;\n"
-            "🔁Кнопка предназначена для генерации 4 новых изображений отличающихся по стилистике от первой генерации."
+            "🔁Кнопка предназначена для генерации 4 новых изображений отличающихся по стилистике от первой генерации.\n"
+            "(Стоимость 1 токен)"
         )
 
         logger.debug(r_queue.llen("queue"))
@@ -42,16 +43,20 @@ class QueueHandler:
             logger.debug(qdata["action"])
             if qdata["action"] in (
                 "imagine",
-                "variation",
                 "describe",
-                "upsample",
-                "reroll",
                 "vary",
                 "zoom",
                 "pan",
                 "describe_retry",
             ):
                 telegram_user.balance -= 2
+                if telegram_user.balance < 5:
+                    telegram_user.role = UserRoleEnum.BASE
+                telegram_user.state = UserStateEnum.READY
+                await telegram_user.asave()
+                logger.debug(telegram_user.state)
+            elif qdata["action"] in ("upsample", "variation", "reroll",):
+                telegram_user.balance -= 1
                 if telegram_user.balance < 5:
                     telegram_user.role = UserRoleEnum.BASE
                 telegram_user.state = UserStateEnum.READY
