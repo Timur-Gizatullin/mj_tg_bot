@@ -16,7 +16,7 @@ from main.handlers.commands import bot  # noqa: E402
 from main.handlers.queue import QueueHandler
 from main.keyboards.commands import resources
 from main.keyboards.interactions import get_keyboard  # noqa: E402
-from main.models import Describe, Prompt, User  # noqa: E402
+from main.models import Blend, Describe, Prompt, User  # noqa: E402
 
 
 class DiscordMiddleWare(discord.Client):
@@ -56,11 +56,21 @@ class DiscordMiddleWare(discord.Client):
     async def on_message(self, message: Message):
         if message.author == self.user:
             return
-
-        logger.error(message.content)
         if message.content and "#" in message.content:
             prompt = str(message.content).split("**")[1]
             chat_id = str(message.content).split("#")[1].split("#")[0]
+        elif message.content and "#" not in message.content and message.attachments:
+            links = message.content.split("**")[1].split(" ")
+            logger.debug(links)
+            file_names = []
+            for dirty_link in links:
+                clean_link = dirty_link.split("<")[1].split(">")[0]
+                file_url = requests.get(clean_link).url
+                file_name = file_url.split("/")[-1].split(".")[0]
+                file_names.append(file_name)
+            blend: Blend = await Blend.objects.get_blend_by_filenames(file_names)
+            chat_id = blend.chat_id
+            prompt = None
         else:
             logger.debug("Message content is empty")
             return
@@ -91,18 +101,24 @@ class DiscordMiddleWare(discord.Client):
 
         keyboard = await get_keyboard(buttons=buttons)
 
-        await Prompt.objects.acreate(
-            prompt=prompt,
-            telegram_chat_id=chat_id,
-            telegram_user=telegram_user,
-            discord_message_id=message.id,
-            message_hash=message_hash,
-            caption=message.content,
-        )
+        if prompt:
+            await Prompt.objects.acreate(
+                prompt=prompt,
+                telegram_chat_id=chat_id,
+                telegram_user=telegram_user,
+                discord_message_id=message.id,
+                message_hash=message_hash,
+                caption=message.content,
+            )
 
-        caption = f"`{prompt.split('#')[-1]}`" if "#" in prompt else prompt
+            caption = f"`{prompt.split('#')[-1]}`" if "#" in prompt else prompt
+        else:
+            caption = None
 
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
+        logger.debug(chat_id)
+        logger.debug(document)
+        logger.debug(caption)
         await bot.send_document(
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )

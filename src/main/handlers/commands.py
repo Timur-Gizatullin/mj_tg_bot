@@ -143,11 +143,22 @@ async def help_handler(message: Message, state) -> None:
 async def mj_handler(messages: list[Message]) -> None:
     chat_id = messages[0].chat.id
     media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
+    user: User = await User.objects.get_user_by_chat_id(chat_id)
     answer = await bot.send_message(chat_id, f"Загружено {len(media_list)} фотографий")
     for message in messages:
         await blend_images_handler(message)
-        media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
+        media_list: list[Blend] = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
         await bot.edit_message_text(f"Загружено {len(media_list)} фотографий", chat_id, answer.message_id)
+    file_names = []
+    for media in media_list:
+        file_name = media.uploaded_filename.split("/")[-1].split(".")[0]
+        file_names.append(file_name)
+
+    logger.debug("".join(file_names))
+    new_blend = Blend(
+        user=user, group_id=media_list[0].group_id, uploaded_filename="".join(file_names), chat_id=messages[0].chat.id
+    )
+    await new_blend.asave()
     await blend_trigger(media_list, answer)
 
 

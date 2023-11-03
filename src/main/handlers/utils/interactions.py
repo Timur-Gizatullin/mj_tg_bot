@@ -158,9 +158,7 @@ async def blend_trigger(blends: list[Blend], message):
                 "uploaded_filename": blend.uploaded_filename,
             }
         )
-        options.append(
-            {"type": 11, "name": f"image{i+1}", "value": i}
-        )
+        options.append({"type": 11, "name": f"image{i+1}", "value": i})
 
     payload = _trigger_payload(
         2,

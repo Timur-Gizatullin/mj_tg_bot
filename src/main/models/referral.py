@@ -2,7 +2,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from asgiref.sync import sync_to_async
-
 from django.db import models
 
 from main.models.user import User

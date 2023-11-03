@@ -55,7 +55,11 @@ class QueueHandler:
                 telegram_user.state = UserStateEnum.READY
                 await telegram_user.asave()
                 logger.debug(telegram_user.state)
-            elif qdata["action"] in ("upsample", "variation", "reroll",):
+            elif qdata["action"] in (
+                "upsample",
+                "variation",
+                "reroll",
+            ):
                 telegram_user.balance -= 1
                 if telegram_user.balance < 5:
                     telegram_user.role = UserRoleEnum.BASE
