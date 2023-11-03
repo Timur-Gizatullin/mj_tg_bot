@@ -57,7 +57,8 @@ class DiscordMiddleWare(discord.Client):
         if message.author == self.user:
             return
 
-        if message.content:
+        logger.error(message.content)
+        if message.content and "#" in message.content:
             prompt = str(message.content).split("**")[1]
             chat_id = str(message.content).split("#")[1].split("#")[0]
         else:

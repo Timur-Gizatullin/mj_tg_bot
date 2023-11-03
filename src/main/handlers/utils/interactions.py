@@ -147,8 +147,10 @@ async def describe_reset_trigger(message_id: str, message):
 
 async def blend_trigger(blends: list[Blend], message):
     attachments = []
-    i = 0
-    for blend in blends:
+    options = []
+    for i, blend in enumerate(blends):
+        logger.debug(i)
+        logger.debug(blend)
         attachments.append(
             {
                 "id": i,
@@ -156,7 +158,9 @@ async def blend_trigger(blends: list[Blend], message):
                 "uploaded_filename": blend.uploaded_filename,
             }
         )
-        i += 1
+        options.append(
+            {"type": 11, "name": f"image{i+1}", "value": i}
+        )
 
     payload = _trigger_payload(
         2,
@@ -165,29 +169,11 @@ async def blend_trigger(blends: list[Blend], message):
             "id": "1062880104792997970",
             "name": "blend",
             "type": 1,
-            "options": [
-                {"type": 11, "name": "image1", "description": "First image to add to the blend", "required": True},
-                {"type": 11, "name": "image2", "description": "Second image to add to the blend", "required": True},
-                {
-                    "type": 3,
-                    "name": "dimensions",
-                    "description": "The dimensions of the image. If not specified, the image will be square.",
-                    "choices": [
-                        {"name": "Portrait", "value": "--ar 2:3"},
-                        {"name": "Square", "value": "--ar 1:1"},
-                        {"name": "Landscape", "value": "--ar 3:2"},
-                    ],
-                },
-                {"type": 11, "name": "image3", "description": "Third image to add to the blend (optional)"},
-                {"type": 11, "name": "image4", "description": "Fourth image to add to the blend (optional)"},
-                {"type": 11, "name": "image5", "description": "Fifth image to add to the blend (optional)"},
-            ],
             "attachments": attachments,
+            "options": options,
         },
     )
-
-    logger.debug(payload)
-
+    logger.debug(attachments)
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token}
 

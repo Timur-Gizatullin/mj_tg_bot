@@ -118,6 +118,7 @@ class QueueHandler:
             r_queue.rpush(f"{message.chat.id}", data)
 
             response = requests.post(INTERACTION_URL, json=payload, headers=header)
+            logger.debug(response.text)
             if response.ok:
                 await message.answer(text="Идет генерация... ⌛")
             else:

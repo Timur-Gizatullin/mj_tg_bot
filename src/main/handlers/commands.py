@@ -6,6 +6,7 @@ from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram_media_group import media_group_handler
 from decouple import config
 from loguru import logger
 
@@ -137,8 +138,21 @@ async def help_handler(message: Message, state) -> None:
     await message.answer(help_message)
 
 
+@dp.message(MenuState.mj, F.media_group_id)
+@media_group_handler
+async def mj_handler(messages: list[Message]) -> None:
+    chat_id = messages[0].chat.id
+    media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
+    answer = await bot.send_message(chat_id, f"Загружено {len(media_list)} фотографий")
+    for message in messages:
+        await blend_images_handler(message)
+        media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
+        await bot.edit_message_text(f"Загружено {len(media_list)} фотографий", chat_id, answer.message_id)
+    await blend_trigger(media_list, answer)
+
+
 @dp.message(MenuState.mj)
-async def mj_handler(message: Message) -> None:
+async def mj_handler(message: Message, messages) -> None:
     user = await is_user_exist(chat_id=str(message.chat.id))
 
     if not user:
@@ -159,7 +173,7 @@ async def mj_handler(message: Message) -> None:
     elif message.photo and message.caption and not message.media_group_id:
         await based_on_photo_imagine(message=message)
     elif message.media_group_id and not message.text:
-        # await blend_images_handler(message)
+        await blend_images_handler(message)
         pass
 
     user.state = UserStateEnum.READY
@@ -301,11 +315,6 @@ async def blend_images_handler(message: Message):
         last_message_id=message.message_id,
     )
 
-    media_list = await Blend.objects.get_blends_by_group_id(message.media_group_id)
-    if media_list:
-        logger.debug(len(media_list))
-        await blend_trigger(media_list, message)
-
     await new_blend.asave()
 
 
@@ -347,6 +356,7 @@ async def based_on_photo_imagine(message: Message):
 
     if image_data.ok:
         image_data = image_data.json()
+        logger.error(image_data.json())
     else:
         logger.error(image_data.text)
         await message.answer("Не удалось загрузить фото")
