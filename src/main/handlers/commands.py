@@ -88,10 +88,9 @@ async def successful_payment(message: types.Message):
 async def deep_start(message: Message, command: CommandObject, state: FSMContext):
     key = command.args
 
-    new_user = await User.objects.get_user_by_username(username=message.from_user.username)
+    new_user = await is_user_exist(chat_id=str(message.chat.id))
 
     if new_user:
-        await message.answer("Вы уже зарегестрированы в нашей системе")
         await start_handler(message, state)
         return
 
@@ -111,10 +110,12 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
-    existing_user: User = await User.objects.get_user_by_username(username=message.from_user.username)
+    existing_user: User = await is_user_exist(chat_id=str(message.chat.id))
 
+    username = message.from_user.username if message.from_user.username else message.from_user.id
     if not existing_user:
-        await User.objects.get_or_create_async(telegram_username=message.from_user.username, chat_id=message.chat.id)
+        user = User(telegram_username=username, chat_id=message.chat.id)
+        await user.asave()
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
 
