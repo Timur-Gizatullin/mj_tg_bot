@@ -140,7 +140,7 @@ async def help_handler(message: Message, state) -> None:
 
 @dp.message(MenuState.mj, F.media_group_id)
 @media_group_handler
-async def mj_handler(messages: list[Message]) -> None:
+async def mj_group_handler(messages: list[Message]) -> None:
     chat_id = messages[0].chat.id
     media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
     user: User = await User.objects.get_user_by_chat_id(chat_id)
@@ -163,7 +163,7 @@ async def mj_handler(messages: list[Message]) -> None:
 
 
 @dp.message(MenuState.mj)
-async def mj_handler(message: Message, messages) -> None:
+async def mj_handler(message: Message) -> None:
     user = await is_user_exist(chat_id=str(message.chat.id))
 
     if not user:

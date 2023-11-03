@@ -73,6 +73,8 @@ services:
       context: .
       dockerfile: ./Dockerfile
     command: [ 'celery', '-A', 't_bot', 'worker', '-l', 'info', '-B' ]
+    env_file:
+      - ./.env
     expose:
       - 6379
     depends_on:
