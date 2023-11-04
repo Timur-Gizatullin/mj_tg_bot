@@ -14,3 +14,6 @@ class Describe(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     objects = DescribeManager()
+
+    def __str__(self):
+        return f"{self.chat_id}[{self.created_at}]"

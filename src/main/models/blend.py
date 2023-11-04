@@ -32,3 +32,6 @@ class Blend(models.Model):
     created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     objects = BlendManager()
+
+    def __str__(self):
+        return f"{self.user.telegram_username}[{self.created_at}]"

@@ -24,4 +24,4 @@ class Prompt(models.Model):
     objects = PromptManager()
 
     def __str__(self):
-        return f"{self.prompt}[{self.pk}]"
+        return f"{self.prompt[:60]}[{self.created_at}]"
