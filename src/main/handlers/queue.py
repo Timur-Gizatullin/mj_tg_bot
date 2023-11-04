@@ -100,7 +100,7 @@ class QueueHandler:
         user.state = UserStateEnum.PENDING
         await user.asave()
 
-        if r_queue.llen("queue") >= 3:
+        if r_queue.llen("queue") >= 3 and user.role != UserRoleEnum.ADMIN:
             data = json.dumps(
                 {
                     "payload": payload,
@@ -113,6 +113,13 @@ class QueueHandler:
             r_queue.rpush("release", data)
 
             await message.answer(text="Запрос добавлен в очередь")
+        elif user.role == UserRoleEnum.ADMIN:
+            response = requests.post(INTERACTION_URL, json=payload, headers=header)
+            logger.debug(response.text)
+            if response.ok:
+                await message.answer(text="Идет генерация... ⌛")
+            else:
+                await message.answer(text="Не удалось добавить запрос в очередь, попробуйте еще раз")
         else:
             data = json.dumps(
                 {

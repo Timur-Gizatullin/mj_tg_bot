@@ -50,27 +50,6 @@ def check_queue():
             r_queue.lpop("queue", j_chat_id)
 
 
-@app.task()
-def check_pays():
-    unverified_pays: list[Pay] = Pay.objects.get_unverified_pays()
-
-    for unverified_pay in unverified_pays:
-        response = requests.get(f"{WALLET_CREATE_ORDER}?id={unverified_pay.pay_id}", headers=WALLET_HEADERS)
-        logger.debug(response.text)
-        if response.ok:
-            unverified_pay.is_verified = True
-            unverified_pay.user.balance += unverified_pay.token_count
-            unverified_pay.save()
-            message = f"Транзакция прошла успешно, ваш баланс {unverified_pay.user.balance}"
-            requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={unverified_pay.user.chat_id}&text={message}"
-            )
-            if unverified_pay.user.balance > 5:
-                unverified_pay.user.role = UserRoleEnum.BASE
-            else:
-                unverified_pay.user.role = UserRoleEnum.PREMIUM
-
-
 app.config_from_object(settings, namespace="CELERY")
 
 # Load task modules from all registered Django apps.

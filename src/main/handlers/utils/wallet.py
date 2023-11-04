@@ -2,6 +2,8 @@ import requests
 from decouple import config
 from loguru import logger
 
+from main.constants import BOT_HOST
+from main.enums import MerchantEnum
 from main.models import Pay, User
 
 WALLET_PREVIEW_LINK = "https://pay.wallet.tg/wpay/store-api/v1/order/preview"
@@ -22,10 +24,10 @@ async def get_pay_link(
             "amount": amount,
         },
         "description": description,
-        "externalId": externalId,  # ID счета на оплату в вашем боте #TODO
+        "externalId": externalId,
         "timeoutSeconds": 60 * 60 * 24,
         "customerTelegramUserId": customer_id,
-        "returnUrl": "https://t.me/MJBOTTESTbot",
+        "returnUrl": BOT_HOST,
         "failReturnUrl": "https://t.me/wallet",
     }
 
@@ -39,7 +41,7 @@ async def get_pay_link(
     pay_id = data["data"]["id"]
     user: User = await User.objects.get_user_by_chat_id(chat_id)
     logger.debug("create pay")
-    pay_dto = Pay(amount=amount, token_count=token_count, pay_id=pay_id, user=user)
+    pay_dto = Pay(amount=amount, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
     await pay_dto.asave()
     logger.debug("return paylink")
-    return data["data"]["payLink"]
+    return (data["data"]["payLink"], pay_dto.pay_id)

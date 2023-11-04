@@ -9,14 +9,12 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from decouple import config
 from loguru import logger
 
-from main.constants import BOT_HOST
+from main.constants import BOT_START_HOST
 from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
-from main.handlers.commands import bot, gpt, is_user_exist
+from main.handlers.commands import bot, gpt
 from main.handlers.utils.interactions import (
-    blend_trigger,
     describe_reset_trigger,
     imagine_trigger,
     send_pan_trigger,
@@ -26,7 +24,8 @@ from main.handlers.utils.interactions import (
     send_vary_trigger,
     send_zoom_trigger,
 )
-from main.handlers.utils.wallet import get_pay_link
+from main.handlers.utils.wallet import get_pay_link, WALLET_CREATE_ORDER, WALLET_PREVIEW_LINK, WALLET_HEADERS
+from main.handlers.utils.yookassa import create_yookassa_invoice, is_payment_succeeded
 from main.keyboards.commands import resources
 from main.keyboards.pay import get_inline_keyboard_from_buttons
 from main.utils import MenuState, callback_data_util, is_has_censor
@@ -36,12 +35,11 @@ django.setup()
 
 from main.models import (  # noqa: E402
     BanWord,
-    Blend,
     GptContext,
     Prompt,
     Referral,
     TelegramAnswer,
-    User,
+    User, Pay,
 )
 
 callback_router = Router()
@@ -281,7 +279,7 @@ async def callback_zoom(callback: types.CallbackQuery):
         return
 
     if action == "2":
-        await send_zoom_trigger(queue=queue, zoomout=1, message=callback.message)
+        await send_zoom_trigger(queue=queue, zoomout="1", message=callback.message)
     elif action == "1.5":
         await send_zoom_trigger(queue=queue, zoomout=action, message=callback.message)
 
@@ -322,10 +320,10 @@ async def callback_pay(callback: types.CallbackQuery):
     token = callback.data.split("_")[-1]
     desc = "Get tokens for Mid Journey telegram bot"
 
-    usdt_amount = str(float(int(amount) // 100))
+    usdt_amount = str(float(int(amount) / 100))
     logger.debug(action)
     if action == "wallet":
-        pay_link = await get_pay_link(
+        pay_link, pay_id = await get_pay_link(
             amount=usdt_amount,
             description=desc,
             customer_id=str(callback.from_user.id),
@@ -340,23 +338,88 @@ async def callback_pay(callback: types.CallbackQuery):
             return
 
         pay_button = types.InlineKeyboardButton(text="👛 Pay via Wallet", url=pay_link)
-        key_board = get_inline_keyboard_from_buttons((pay_button,))
+        confirm_button = types.InlineKeyboardButton(text="Я оплатил", callback_data=f"confirm-pay_wallet_{pay_id}")
+        key_board = get_inline_keyboard_from_buttons((pay_button, confirm_button))
 
         await callback.message.answer(f"Get {token} tokens for {usdt_amount}$", reply_markup=key_board)
         await callback.answer()
     if action == "yokasa":
-        price = types.LabeledPrice(label=f"Вы покупаете {token} токенов", amount=int(amount) * 100)
-        await bot.send_invoice(
-            callback.message.chat.id,
-            title="Подписка на бота",
-            description=desc,
-            provider_token=config("PAYMENTS_PROVIDER_TOKEN"),
-            currency="rub",
-            is_flexible=False,
-            prices=[price],
-            payload=f"{token}",
-        )
-        await callback.answer()
+        logger.error(amount)
+        try:
+            user = await User.objects.get_user_by_chat_id(callback.message.chat.id)
+            payment_invoice, pay_id = await create_yookassa_invoice(amount=str(float(amount)), description=desc, token_count=int(token), user=user)
+            confirmation_url = payment_invoice["confirmation"]["confirmation_url"]
+            pay_button = types.InlineKeyboardButton(text="👛 Pay via Yookassa", url=confirmation_url)
+            confirm_button = types.InlineKeyboardButton(text="Я оплатил", callback_data=f"confirm-pay_yookassa_{pay_id}")
+            key_board = get_inline_keyboard_from_buttons((pay_button, confirm_button))
+            await callback.message.answer(f"Get {token} tokens for {amount}₽", reply_markup=key_board)
+            await callback.answer()
+        except Exception as e:
+            logger.error(e)
+            await callback.message.answer("Не удалось создать платеж")
+            await callback.answer()
+
+
+@callback_router.callback_query(lambda c: c.data.startswith("confirm-pay"))
+async def callbacks_confirm_pay(callback: types.CallbackQuery):
+    action = callback.data.split("_")[-2]
+    pay_id = callback.data.split("_")[-1]
+    user: User = User.objects.get_user_by_chat_id(callback.message.chat.id)
+
+    if action == "yookassa":
+        pay_dto: Pay = await Pay.objects.get_unverified_pay_by_id(pay_id)
+
+        if not pay_dto:
+            await callback.message.answer("Не удалось найти платеж")
+            await callback.answer()
+            return
+
+        is_succeeded =  await is_payment_succeeded(pay_dto.pay_id)
+
+        if is_succeeded:
+            pay_dto.is_verified = True
+            user.balance += pay_dto.token_count
+            await pay_dto.asave()
+            await user.asave()
+
+            message = f"Транзакция прошла успешно, ваш баланс {user.balance}"
+            await callback.message.answer(message)
+        else:
+            await callback.message.answer("Платеж обрабатывается или отменен, попробуйте позже")
+            await callback.answer()
+            return
+
+    if action == "wallet":
+        pay_dto: Pay = await Pay.objects.get_unverified_pay_by_id(pay_id)
+
+        if not pay_dto:
+            await callback.message.answer("Не удалось найти платеж")
+            await callback.answer()
+            return
+
+        response = requests.get(f"{WALLET_PREVIEW_LINK}?id={pay_id}", headers=WALLET_HEADERS)
+        logger.debug(response.text)
+        if response.ok:
+            pay_dto.is_verified = True
+            user.balance += pay_dto.token_count
+            await pay_dto.asave()
+            await user.asave()
+            message = f"Транзакция прошла успешно, ваш баланс {user.balance}"
+            await callback.message.answer(message)
+        else:
+            await callback.message.answer("Платеж обрабатывается или отменен, попробуйте позже")
+            await callback.answer()
+            return
+
+    if user.balance > 5:
+        user.role = UserRoleEnum.BASE
+    else:
+        user.role = UserRoleEnum.PREMIUM
+
+
+
+
+
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("describe"))
@@ -444,7 +507,7 @@ async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
             referral = await Referral.objects.create_referral(current_user)
 
         builder = InlineKeyboardBuilder()
-        answer = f"Ваш баланс {current_user.balance}\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+        answer = f"Ваш баланс {current_user.balance}\n" f"Ваша реферальная ссылка: {BOT_START_HOST}{referral.key}"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
         await callback.message.answer(answer, reply_markup=builder.as_markup(), parse_mode=ParseMode.HTML)
@@ -457,7 +520,7 @@ async def menu_start_callback(callback: types.CallbackQuery, state: FSMContext):
             referral = await Referral.objects.create_referral(current_user)
 
         answer = (
-            "За каждого реферала Вам будет начислено 6 токенов\n\n" f"Ваша реферальная ссылка: {BOT_HOST}{referral.key}"
+            "За каждого реферала Вам будет начислено 6 токенов\n\n" f"Ваша реферальная ссылка: {BOT_START_HOST}{referral.key}"
         )
         await callback.message.answer(answer, parse_mode=ParseMode.HTML)
 
@@ -598,7 +661,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
             for i in range(1, 4)
         ]
         builder.row(*buttons)
-        logger.debug(data["img"])  # TODO
+        logger.debug(data["img"])
         if data["img"]:
             callback_data_util[f"img{callback.message.chat.id}{callback.message.message_id}"] = data["img"]
             logger.debug(callback_data_util)
@@ -664,7 +727,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             {"role": "user", "content": message},
         ]
 
-        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
+        await callback.message.answer(f"GPT думает ... ⌛\n")
         prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
         prompt = prompt.choices[0].message.content
 

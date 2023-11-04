@@ -22,3 +22,8 @@ class UserRoleEnum(BaseStrEnum):
 class UserStateEnum(BaseStrEnum):
     PENDING = "PENDING"
     READY = "READY"
+
+
+class MerchantEnum(BaseStrEnum):
+    YOOKASSA = "YOOKASSA"
+    WALLET = "WALLET"
