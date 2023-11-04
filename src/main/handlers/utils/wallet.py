@@ -44,4 +44,5 @@ async def get_pay_link(
     pay_dto = Pay(amount=amount, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
     await pay_dto.asave()
     logger.debug("return paylink")
-    return (data["data"]["payLink"], pay_dto.pay_id)
+
+    return (data["data"]["payLink"], pay_dto.pk)

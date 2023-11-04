@@ -121,7 +121,7 @@ async def callbacks_confirm_pay(callback: types.CallbackQuery):
             await callback.answer()
             return
 
-    if user.balance > 5:
+    if user.balance < 5:
         user.role = UserRoleEnum.BASE
     else:
         user.role = UserRoleEnum.PREMIUM
