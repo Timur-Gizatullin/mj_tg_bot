@@ -26,7 +26,7 @@ async def callback_pay(callback: types.CallbackQuery):
     token = callback.data.split("_")[-1]
     desc = "Get tokens for Mid Journey telegram bot"
 
-    usdt_amount = str(float(int(amount) / 100))
+    usdt_amount = str(float(amount) / 100)
     logger.debug(action)
     if action == "wallet":
         pay_link, pay_id = await get_pay_link(

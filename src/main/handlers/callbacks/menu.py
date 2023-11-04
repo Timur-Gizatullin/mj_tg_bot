@@ -118,17 +118,6 @@ async def lk_callback(callback: types.CallbackQuery):
             )
             options_button.append(button)
 
-        options_button = (
-            types.InlineKeyboardButton(text="4 токена = 20 руб", callback_data="pay-options_4_20"),
-            types.InlineKeyboardButton(text="10 токенов = 50 руб", callback_data="pay-options_10_50"),
-            types.InlineKeyboardButton(text="20 токенов = 90 руб", callback_data="pay-options_20_90"),
-            types.InlineKeyboardButton(text="50 токенов = 200 руб", callback_data="pay-options_50_200"),
-            types.InlineKeyboardButton(text="100 токенов = 400 руб", callback_data="pay-options_100_400"),
-            types.InlineKeyboardButton(text="200 токенов = 800 руб", callback_data="pay-options_200_800"),
-            types.InlineKeyboardButton(text="400 токенов = 1500 руб", callback_data="pay-options_400_1500"),
-            types.InlineKeyboardButton(text="1000 токенов = 3000 руб", callback_data="pay-options_1000_3000"),
-        )
-
         builder = InlineKeyboardBuilder()
         j = 0
         for i in range(len(options_button) // 2):

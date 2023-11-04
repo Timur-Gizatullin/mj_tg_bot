@@ -7,7 +7,7 @@ from main.enums import CurrencyEnum, ProductEnum
 class PriceManager(models.Manager):
     @sync_to_async
     def get_active_prices_by_product(self, product: ProductEnum) -> list["Price"]:
-        return list(self.filter(product=product, is_active=True).all())
+        return list(self.filter(product=product, is_active=True).order_by("amount").all())
 
 
 class Price(models.Model):
