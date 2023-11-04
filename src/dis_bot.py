@@ -4,7 +4,7 @@ import discord
 import django
 import requests
 from aiogram.enums import ParseMode
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InputMediaPhoto
 from decouple import config
 from discord.message import Message
 from loguru import logger
@@ -18,12 +18,25 @@ from main.keyboards.commands import resources
 from main.keyboards.interactions import get_keyboard  # noqa: E402
 from main.models import Blend, Describe, Prompt, User  # noqa: E402
 
-
+preview_handler = {}
 class DiscordMiddleWare(discord.Client):
     async def on_ready(self):
         logger.info("Logged on as", self.user)
 
     async def on_message_edit(self, message_before: Message, message_after: Message):
+        if message_before.content and message_before.attachments:
+            prompt = str(message_before.content).split("**")[1]
+            chat_id = str(message_before.content).split("#")[1].split("#")[0]
+            file_url = message_before.attachments[0].url
+            preview = preview_handler.get(f"{chat_id}{prompt}")
+            if not preview:
+                preview = await bot.send_photo(chat_id=chat_id, photo=file_url)
+                preview_handler[f"{chat_id}{prompt}"] = preview.message_id
+            else:
+                media = InputMediaPhoto(media=file_url)
+                await bot.edit_message_media(chat_id=chat_id, message_id=preview, media=media)
+            return
+
         if len(message_after.embeds) == 1 and len(message_before.embeds) == 0:
             logger.debug(message_after.embeds[0].description)
             logger.debug(message_after.embeds[0].image)
@@ -119,18 +132,20 @@ class DiscordMiddleWare(discord.Client):
                 message_hash=message_hash,
                 caption=message.content,
             )
-
             caption = f"`{prompt.split('#')[-1]}`" if "#" in prompt else prompt
         else:
             caption = None
 
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
-        logger.debug(chat_id)
-        logger.debug(document)
-        logger.debug(caption)
+
         await bot.send_document(
             chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
         )
+
+        preview = preview_handler.pop(f"{chat_id}{prompt}")
+        logger.debug(preview)
+        if preview:
+            await bot.delete_message(chat_id=chat_id, message_id=preview)
 
         logger.debug(message)
         await QueueHandler.exclude_queue(chat_id, telegram_user=telegram_user)
