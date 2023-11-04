@@ -10,6 +10,7 @@ from main.enums import MerchantEnum
 class PayManager(models.Manager):
     def get_unverified_pays(self) -> list["Pay"]:
         return list(self.filter(is_verified=False).all())
+
     @sync_to_async()
     def get_unverified_pay_by_id(self, pay_id):
         return self.filter(pk=pay_id, is_verified=False).first()

@@ -34,4 +34,4 @@ class Blend(models.Model):
     objects = BlendManager()
 
     def __str__(self):
-        return f"{self.user.telegram_username}[{self.created_at}]"
+        return f"{self.chat_id}[{self.created_at}]"
