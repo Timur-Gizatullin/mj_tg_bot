@@ -107,7 +107,9 @@ async def get_gpt_prompt_suggestions(prompt, callback, user, data):
             callback_data_util[f"img{callback.message.chat.id}{callback.message.message_id}"] = data["img"]
             logger.debug(callback_data_util)
 
-        await callback.message.answer(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
+        await callback.message.answer(
+            text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
+        )
 
         user.balance -= 1
         if user.balance < 5:

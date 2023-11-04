@@ -142,7 +142,11 @@ class DiscordMiddleWare(discord.Client):
 
         try:
             await bot.send_document(
-                chat_id=chat_id, document=document, reply_markup=keyboard, caption=caption, parse_mode=ParseMode.MARKDOWN
+                chat_id=chat_id,
+                document=document,
+                reply_markup=keyboard,
+                caption=caption,
+                parse_mode=ParseMode.MARKDOWN,
             )
         except Exception as e:
             logger.error(e)

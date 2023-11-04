@@ -35,6 +35,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
 
     if not await is_ready(user, callback):
         return
+    user.state = UserStateEnum.PENDING
+    await user.asave()
 
     prompt = await gpt_translate(message)
 
@@ -46,9 +48,6 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
         user.state = UserStateEnum.READY
         await user.asave()
         return
-
-    user.state = UserStateEnum.PENDING
-    await user.asave()
 
     try:
         if action == "gpt":
@@ -77,19 +76,18 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
 
             await answer.edit_text(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
             await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
-            await callback.answer(cache_time=100)
             return
         if action == "stay":
             if not await is_enough_balance(user, callback, 2):
                 return
 
-            await callback.message.answer("Идет генирация... ⌛\n")
+            await callback.message.answer("Идет генерация... ⌛\n")
             img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
             img_links = img_data["data"]
             for img_link in img_links:
                 raw_image = requests.get(img_link["url"]).content
                 img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-                await callback.message.chat.send_photo(photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN)
+                await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN)
 
             user.balance -= 2
             if user.balance < 5:
@@ -100,8 +98,6 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await bot.send_message(
                 chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}\n\n{resources}"
             )
-
-            await callback.answer(cache_time=60)
             return
     except Exception as e:
         logger.error(e)
@@ -117,7 +113,6 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
 
     if not await is_can_use(telegram_user, callback, 2):
         return
-
     telegram_user.state = UserStateEnum.PENDING
     await telegram_user.asave()
 
@@ -150,4 +145,3 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
         await callback.message.answer(f"Не удалось запустить генерацию\nБаланс в токенах {telegram_user.balance}")
-    await callback.answer(cache_time=5000)

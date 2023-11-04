@@ -263,9 +263,6 @@ async def dale_handler(message: Message):
     kb = builder.row(*prompt_buttons)
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
-    user.state = UserStateEnum.READY
-    await user.asave()
-
 
 async def handle_imagine(message, img_url: str | None = None):
     if "\n" in message.text:
