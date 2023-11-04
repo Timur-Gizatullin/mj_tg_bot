@@ -23,7 +23,7 @@ GPT_OPTION = """The ethereal quality of the charcoal brings a nostalgic feel tha
 use different lens and cameras
 
 You will now receive a text prompt from me and then create three creative prompts for the Midjourney AI art generator using the best practices mentioned above. Do not include explanations in your response. List three prompts with correct syntax without unnecessary words.
-"""
+"""  # noqa:E501
 
 TRANSLATOR_GPT_OPTION = (
     "You are a professional translator from Russian into English, "

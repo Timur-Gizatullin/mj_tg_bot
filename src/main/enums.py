@@ -27,3 +27,12 @@ class UserStateEnum(BaseStrEnum):
 class MerchantEnum(BaseStrEnum):
     YOOKASSA = "YOOKASSA"
     WALLET = "WALLET"
+
+
+class CurrencyEnum(BaseStrEnum):
+    RUB = "RUB"
+    USD = "USD"
+
+
+class ProductEnum(BaseStrEnum):
+    TOKEN = "TOKEN"

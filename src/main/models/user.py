@@ -54,12 +54,12 @@ class UserManager(AbstractUserManager):
 
 
 class User(AbstractUser):
-    telegram_username: str = models.CharField(unique=True, null=True)
-    chat_id: str = models.CharField(unique=True, null=True)
-    balance: int = models.IntegerField(null=False, default=15)
-    role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE)
-    state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE)
-    password = models.CharField(blank=True)
+    telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме")
+    chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм")
+    balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
+    role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
+    state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Состояние")
+    password = models.CharField(blank=True, verbose_name="Пароль")
 
     objects = UserManager()
 
@@ -67,9 +67,9 @@ class User(AbstractUser):
         name = self.email if self.email else self.telegram_username
         return name
 
-    async def decrease_generations_count(self, token: int):
-        self.balance -= token
-        await self.asave()
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
 
 
 class UserFilter(admin.SimpleListFilter):

@@ -6,6 +6,7 @@ from main.models import (
     Describe,
     GptContext,
     Pay,
+    Price,
     Prompt,
     Referral,
     TelegramAnswer,
@@ -22,3 +23,4 @@ admin.site.register(Pay)
 admin.site.register(Describe)
 admin.site.register(Blend)
 admin.site.register(GptContext)
+admin.site.register(Price)

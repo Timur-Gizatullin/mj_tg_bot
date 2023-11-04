@@ -15,13 +15,14 @@ class TelegramAnswerManager(models.Manager):
 
 
 class TelegramAnswer(models.Model):
-    type = models.CharField(
-        choices=AnswerTypeEnum.get_choices(),
-        unique=True,
-    )
-    message = models.TextField()
+    type = models.CharField(choices=AnswerTypeEnum.get_choices(), unique=True, verbose_name="Тип ответа")
+    message = models.TextField(verbose_name="Содержание ответа")
 
     objects = TelegramAnswerManager()
 
     def __str__(self):
         return str(self.type)
+
+    class Meta:
+        verbose_name = "Ответ бота"
+        verbose_name_plural = "Ответы бота"

@@ -8,7 +8,7 @@ from loguru import logger
 
 from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
 from main.handlers.commands import bot, gpt
-from main.handlers.routers import (
+from main.handlers.utils import (
     GPT_OPTION,
     gpt_translate,
     is_can_use,
@@ -87,7 +87,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             for img_link in img_links:
                 raw_image = requests.get(img_link["url"]).content
                 img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-                await bot.send_photo(chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN)
+                await bot.send_photo(
+                    chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+                )
 
             user.balance -= 2
             if user.balance < 5:

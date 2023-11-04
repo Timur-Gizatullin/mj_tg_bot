@@ -24,14 +24,17 @@ class BlendManager(models.Manager):
 
 
 class Blend(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="blends")
-    group_id: str = models.CharField()
-    uploaded_filename: str = models.CharField()
-    last_message_id: str = models.CharField(null=True)
-    chat_id: str = models.CharField(null=True)
-    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="blends", verbose_name="Пользователь")
+    group_id: str = models.CharField(verbose_name="ID медиа группы")
+    uploaded_filename: str = models.CharField(verbose_name="Имя файла")
+    chat_id: str = models.CharField(null=True, verbose_name="ID телеграм чата")
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True, verbose_name="Время создания")
 
     objects = BlendManager()
 
     def __str__(self):
         return f"{self.chat_id}[{self.created_at}]"
+
+    class Meta:
+        verbose_name = "Объедененное фото"
+        verbose_name_plural = "Объедененные фото"

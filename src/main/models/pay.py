@@ -17,12 +17,16 @@ class PayManager(models.Manager):
 
 
 class Pay(models.Model):
-    amount: Decimal = models.DecimalField(null=False, decimal_places=4, max_digits=12)
-    token_count: int = models.IntegerField(null=True)
-    pay_id: int = models.CharField(null=True)
-    is_verified = models.BooleanField(null=True, default=False)
-    user = models.ForeignKey("User", on_delete=models.DO_NOTHING, related_name="payments")
-    merchant = models.CharField(choices=MerchantEnum.get_choices(), null=True)
-    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True)
+    amount: Decimal = models.DecimalField(null=False, decimal_places=4, max_digits=12, verbose_name="Сумма оплаты")
+    token_count: int = models.IntegerField(null=True, verbose_name="Эквивалент в токенах")
+    pay_id: int = models.CharField(null=True, verbose_name="ID оплаты в провайдере")
+    is_verified = models.BooleanField(null=True, default=False, verbose_name="Подтвержден")
+    user = models.ForeignKey("User", on_delete=models.DO_NOTHING, related_name="payments", verbose_name="Пользователь")
+    merchant = models.CharField(choices=MerchantEnum.get_choices(), null=True, verbose_name="Провайдер")
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, verbose_name="Время создания")
 
     objects = PayManager()
+
+    class Meta:
+        verbose_name = "Платеж"
+        verbose_name_plural = "Платежи"

@@ -9,11 +9,15 @@ class DescribeManager(models.Manager):
 
 
 class Describe(models.Model):
-    file_name: str = models.CharField()
-    chat_id: str = models.CharField()
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    file_name: str = models.CharField(verbose_name="Имя файла")
+    chat_id: str = models.CharField(verbose_name="ID телеграм чата")
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, verbose_name="Время создания")
 
     objects = DescribeManager()
 
     def __str__(self):
         return f"{self.chat_id}[{self.created_at}]"
+
+    class Meta:
+        verbose_name = "Описание фото"
+        verbose_name_plural = "Описания фото"

@@ -7,7 +7,7 @@ from loguru import logger
 
 from main.enums import AnswerTypeEnum, UserStateEnum
 from main.handlers.commands import bot
-from main.handlers.routers import (
+from main.handlers.utils import (
     get_gpt_prompt_suggestions,
     gpt_translate,
     is_can_use,

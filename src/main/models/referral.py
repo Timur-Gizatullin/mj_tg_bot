@@ -34,18 +34,22 @@ class ReferralManager(models.Manager):
 
 
 class Referral(models.Model):
-    key: str = models.CharField(unique=True, null=False)
+    key: str = models.CharField(unique=True, null=False, verbose_name="Уникальный ключ")
     referrer: User = models.ForeignKey(
         "User",
         on_delete=models.CASCADE,
         related_name="referrals",
-        verbose_name="referrer",
+        verbose_name="Владелец ссылки",
     )
-    name: str = models.CharField(null=True, blank=True)
-    used_count = models.IntegerField(default=int())
-    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    name: str = models.CharField(null=True, blank=True, verbose_name="Название")
+    used_count = models.IntegerField(default=int(), verbose_name="Колличество переходов")
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True, verbose_name="Время создания")
 
     objects = ReferralManager()
 
     def __str__(self):
         return f"{self.referrer.telegram_username}[{self.name}]"
+
+    class Meta:
+        verbose_name = "Рефферальная ссылка"
+        verbose_name_plural = "Реферальные ссылки"

@@ -17,10 +17,14 @@ class GptContextManager(models.Manager):
 
 
 class GptContext(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="gpt_contexts")
-    role: str = models.CharField()
-    content: str = models.CharField()
-    telegram_chat_id: str = models.CharField()
-    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="gpt_contexts", verbose_name="Пользователь")
+    role: str = models.CharField(verbose_name="Роль")
+    content: str = models.CharField(verbose_name="Содержание")
+    telegram_chat_id: str = models.CharField(verbose_name="ID телеграм чата")
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, null=True, verbose_name="Время создания")
 
     objects = GptContextManager()
+
+    class Meta:
+        verbose_name = "Контекст GPT"
+        verbose_name_plural = "Контексты GPT"

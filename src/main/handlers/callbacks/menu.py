@@ -7,7 +7,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from main.constants import BOT_START_HOST
+from main.enums import ProductEnum
 from main.models import Referral, User
+from main.models.prices import Price
 from main.utils import MenuState
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -107,6 +109,15 @@ async def lk_callback(callback: types.CallbackQuery):
             "При оплате в USDT - 1 usdt = 100р"
         )
 
+        prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)
+        options_button = []
+        for price in prices:
+            button = types.InlineKeyboardButton(
+                text=f"{price.quantity} {price.description} = {price.amount} руб",
+                callback_data=f"pay-options_{price.quantity}_{price.amount}",
+            )
+            options_button.append(button)
+
         options_button = (
             types.InlineKeyboardButton(text="4 токена = 20 руб", callback_data="pay-options_4_20"),
             types.InlineKeyboardButton(text="10 токенов = 50 руб", callback_data="pay-options_10_50"),
@@ -123,6 +134,8 @@ async def lk_callback(callback: types.CallbackQuery):
         for i in range(len(options_button) // 2):
             builder.row(options_button[j], options_button[j + 1])
             j += 2
+        if range(len(options_button) % 2 != 0):
+            builder.row(options_button[-1])
 
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()

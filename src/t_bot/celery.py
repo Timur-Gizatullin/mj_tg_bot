@@ -3,31 +3,26 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-import requests
 from celery import Celery
 from django.conf import settings
-
-from t_bot.settings import TELEGRAM_TOKEN
 
 logger = logging.getLogger("django")
 
 # Set the default Django settings module for the 'celery' program.
-import django
+import django  # noqa:E402
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.enums import UserRoleEnum, UserStateEnum
-from main.handlers.queue import r_queue
-from main.handlers.utils.wallet import WALLET_CREATE_ORDER, WALLET_HEADERS
-from main.models import Pay, User
+from main.enums import UserStateEnum  # noqa:E402
+from main.handlers.queue import r_queue  # noqa:E402
+from main.models import User  # noqa:E402
 
 app = Celery("t_bot")
 
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(90.0, check_pays.s())
     sender.add_periodic_task(10.0, check_queue.s())
 
 

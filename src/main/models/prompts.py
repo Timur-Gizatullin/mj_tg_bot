@@ -13,15 +13,21 @@ class PromptManager(models.Manager):
 
 
 class Prompt(models.Model):
-    prompt = models.CharField()
-    telegram_chat_id = models.CharField(null=True)
-    telegram_user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="prompts")
-    discord_message_id = models.CharField(null=True)
-    message_hash = models.CharField(null=True)
-    caption = models.CharField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True)
+    prompt = models.CharField(verbose_name="Промпт или действие")
+    telegram_chat_id = models.CharField(null=True, verbose_name="ID телеграм чата")
+    telegram_user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="prompts", verbose_name="Пользователь"
+    )
+    discord_message_id = models.CharField(null=True, verbose_name="ID сообщения в дискорд")
+    message_hash = models.CharField(null=True, verbose_name="хэш сообщения")
+    caption = models.CharField(null=True, verbose_name="Подпись")
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, verbose_name="Время создания")
 
     objects = PromptManager()
 
     def __str__(self):
         return f"{self.prompt[:60]}[{self.created_at}]"
+
+    class Meta:
+        verbose_name = "Промпт"
+        verbose_name_plural = "Промпты"

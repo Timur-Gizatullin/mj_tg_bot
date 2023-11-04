@@ -1,8 +1,6 @@
 import requests
-from loguru import logger
 
-from main.handlers.utils.wallet import WALLET_CREATE_ORDER, WALLET_HEADERS
-from main.models import Pay, User
+from main.models import User
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 

@@ -316,7 +316,6 @@ async def blend_images_handler(message: Message):
         user=user,
         group_id=message.media_group_id,
         uploaded_filename=upload_filename,
-        last_message_id=message.message_id,
     )
 
     await new_blend.asave()

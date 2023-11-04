@@ -16,15 +16,15 @@ from main.handlers.callbacks.menu import menu_router  # noqa: E402
 from main.handlers.callbacks.midjourney import mj_router  # noqa: E402
 from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.commands import bot, dp  # noqa: E402
-from main.handlers.queue import r_queue
+from main.handlers.queue import r_queue  # noqa:E402
 
 
 async def clear_queues():
     for i in r_queue.lrange("queue", 0, -1):
-        logger.debug(f"Remove elements form queue")
+        logger.debug("Remove elements form queue")
         r_queue.lpop("queue")
     for i in r_queue.lrange("release", 0, -1):
-        logger.debug(f"Remove elements form release")
+        logger.debug("Remove elements form release")
         r_queue.lpop("release")
 
 
