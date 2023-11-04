@@ -364,7 +364,7 @@ async def callback_pay(callback: types.CallbackQuery):
 async def callbacks_confirm_pay(callback: types.CallbackQuery):
     action = callback.data.split("_")[-2]
     pay_id = callback.data.split("_")[-1]
-    user: User = User.objects.get_user_by_chat_id(callback.message.chat.id)
+    user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
     if action == "yookassa":
         pay_dto: Pay = await Pay.objects.get_unverified_pay_by_id(pay_id)
