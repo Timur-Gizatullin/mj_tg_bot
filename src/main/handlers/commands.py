@@ -175,9 +175,6 @@ async def mj_handler(message: Message) -> None:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         return
 
-    user.state = UserStateEnum.PENDING
-    await user.asave()
-    logger.debug(message.media_group_id)
     if message.text and not message.photo and not message.media_group_id:
         await handle_imagine(message)
     elif message.photo and not message.text and not message.media_group_id and not message.caption:

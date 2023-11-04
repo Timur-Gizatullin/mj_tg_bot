@@ -81,9 +81,6 @@ async def callbacks_variations(callback: types.CallbackQuery):
         await callback.answer()
         return
 
-    telegram_user.state = UserStateEnum.PENDING
-    await telegram_user.asave()
-
     if action == "V1":
         await send_variation_trigger(variation_index="1", queue=queue, message=callback.message)
     elif action == "V2":
@@ -152,8 +149,6 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
         await callback.answer()
         return
 
-    telegram_user.state = UserStateEnum.PENDING
-
     await send_upsample_trigger(upsample_index="1", queue=queue, version=action, message=callback.message)
 
     await callback.answer()
@@ -180,8 +175,6 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return
-
-    telegram_user.state = UserStateEnum.PENDING
 
     help_message = (
         "🪄Vary Strong - вносит больше изменений в создаваемые вариации, увеличивает урвоень художественности и "
@@ -228,8 +221,6 @@ async def callback_reset(callback: types.CallbackQuery):
         await callback.answer()
         return
 
-    telegram_user.state = UserStateEnum.PENDING
-
     await send_reset_trigger(
         message_id=queue.discord_message_id, message_hash=queue.message_hash, message=callback.message
     )
@@ -258,9 +249,6 @@ async def callback_vary(callback: types.CallbackQuery):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return
-
-    telegram_user.state = UserStateEnum.PENDING
-    await telegram_user.asave()
 
     if action == "strong":
         await send_vary_trigger(vary_type="high_variation", queue=queue, message=callback.message)
@@ -292,8 +280,6 @@ async def callback_zoom(callback: types.CallbackQuery):
         await callback.answer()
         return
 
-    telegram_user.state = UserStateEnum.PENDING
-
     if action == "2":
         await send_zoom_trigger(queue=queue, zoomout=1, message=callback.message)
     elif action == "1.5":
@@ -323,8 +309,6 @@ async def callback_pan(callback: types.CallbackQuery):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return
-
-    telegram_user.state = UserStateEnum.PENDING
 
     await send_pan_trigger(queue=queue, direction=action, message=callback.message)
 
@@ -393,8 +377,6 @@ async def callbacks_describe(callback: types.CallbackQuery):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return
-
-    telegram_user.state = UserStateEnum.PENDING
 
     if callback.data != "reset" and action != "all":
         prompt = callback.message.caption.split("\n\n")[int(action)]
@@ -587,9 +569,6 @@ async def suggestion_callback(callback: types.CallbackQuery):
         await user.asave()
         return
 
-    user.state = UserStateEnum.PENDING
-    await user.asave()
-
     if action == "gpt":
         if user.balance - 1 < 0:
             builder = InlineKeyboardBuilder()
@@ -701,69 +680,75 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     user.state = UserStateEnum.PENDING
     await user.asave()
 
-    if action == "gpt":
-        if user.balance - 1 < 0:
+    try:
+        if action == "gpt":
+            if user.balance - 1 < 0:
+                builder = InlineKeyboardBuilder()
+                answer = f"Ваш баланс {user.balance}\n"
+                lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+                builder.row(*lk_buttons)
+                await callback.message.answer(answer, reply_markup=builder.as_markup())
+                await callback.answer()
+                return
+
+            messages = [
+                {"role": "system", "content": GPT_OPTION},
+                {"role": "user", "content": prompt},
+            ]
+            answer = await callback.message.answer(f"GPT думает ... ⌛\n")
+            prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+
             builder = InlineKeyboardBuilder()
-            answer = f"Ваш баланс {user.balance}\n"
-            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
-            builder.row(*lk_buttons)
-            await callback.message.answer(answer, reply_markup=builder.as_markup())
-            await callback.answer()
+            buttons = [
+                types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-dalle-gpt_{i}") for i in range(1, 4)
+            ]
+            builder.row(*buttons)
+
+            user.balance -= 1
+            if user.balance < 5:
+                user.role = UserRoleEnum.BASE
+            user.state = UserStateEnum.READY
+            await user.asave()
+
+            await answer.edit_text(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
+            await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
+            await callback.answer(cache_time=100)
             return
+        if action == "stay":
+            if user.balance - 2 < 0:
+                builder = InlineKeyboardBuilder()
+                answer = f"Ваш баланс {user.balance}\n"
+                lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+                builder.row(*lk_buttons)
+                await callback.message.answer(answer, reply_markup=builder.as_markup())
+                await callback.answer()
+                return
 
-        messages = [
-            {"role": "system", "content": GPT_OPTION},
-            {"role": "user", "content": prompt},
-        ]
-        answer = await callback.message.answer(f"GPT думает ... ⌛\n")
-        prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+            await callback.message.answer("Идет генирация... ⌛\n")
+            img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+            img_links = img_data["data"]
+            for img_link in img_links:
+                raw_image = requests.get(img_link["url"]).content
+                img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+                await bot.send_photo(
+                    chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+                )
 
-        builder = InlineKeyboardBuilder()
-        buttons = [
-            types.InlineKeyboardButton(text=f"промпт {i}", callback_data=f"choose-dalle-gpt_{i}") for i in range(1, 4)
-        ]
-        builder.row(*buttons)
+            user.balance -= 2
+            if user.balance < 5:
+                user.role = UserRoleEnum.BASE
+            user.state = UserStateEnum.READY
+            await user.asave()
 
-        user.balance -= 1
-        if user.balance < 5:
-            user.role = UserRoleEnum.BASE
+            await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}\n\n{resources}")
+
+            await callback.answer(cache_time=60)
+            return
+    except Exception as e:
+        logger.error(e)
         user.state = UserStateEnum.READY
         await user.asave()
-
-        await answer.edit_text(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
-        await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
-        await callback.answer(cache_time=100)
-        return
-    if action == "stay":
-        if user.balance - 2 < 0:
-            builder = InlineKeyboardBuilder()
-            answer = f"Ваш баланс {user.balance}\n"
-            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
-            builder.row(*lk_buttons)
-            await callback.message.answer(answer, reply_markup=builder.as_markup())
-            await callback.answer()
-            return
-
-        await callback.message.answer("Идет генирация... ⌛\n")
-        img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
-        img_links = img_data["data"]
-        for img_link in img_links:
-            raw_image = requests.get(img_link["url"]).content
-            img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-            await bot.send_photo(
-                chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
-            )
-
-        user.balance -= 2
-        if user.balance < 5:
-            user.role = UserRoleEnum.BASE
-        user.state = UserStateEnum.READY
-        await user.asave()
-
-        await bot.send_message(chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}\n\n{resources}")
-
-        await callback.answer(cache_time=60)
-        return
+        await callback.message.answer(f"Не удалось запустить генерацию\nБаланс в токенах {user.balance}")
 
 
 @callback_router.callback_query(lambda c: c.data.startswith("gpt"))
@@ -794,9 +779,6 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return
-
-    telegram_user.state = UserStateEnum.PENDING
-    await telegram_user.asave()
 
     try:
         prompt = callback.message.text.split("\n\n")[choose - 1][2:]
@@ -843,23 +825,28 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
-    await callback.message.answer(f"Идет генерация... ⌛\n")
-    img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
-    img_links = img_data["data"]
-    for img_link in img_links:
-        raw_image = requests.get(img_link["url"]).content
-        img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
-        await bot.send_photo(
-            chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+    try:
+        await callback.message.answer(f"Идет генерация... ⌛\n")
+        img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+        img_links = img_data["data"]
+        for img_link in img_links:
+            raw_image = requests.get(img_link["url"]).content
+            img = BufferedInputFile(file=raw_image, filename=f"{callback.message.message_id}.png")
+            await bot.send_photo(
+                chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
+            )
+
+        telegram_user.balance -= 2
+        if telegram_user.balance < 5:
+            telegram_user.role = UserRoleEnum.BASE
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await bot.send_message(
+            chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}\n\n{resources}"
         )
-
-    telegram_user.balance -= 2
-    if telegram_user.balance < 5:
-        telegram_user.role = UserRoleEnum.BASE
-    telegram_user.state = UserStateEnum.READY
-    await telegram_user.asave()
-    await bot.send_message(
-        chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}\n\n{resources}"
-    )
-
+    except Exception as e:
+        logger.error(e)
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
+        await callback.message.answer(f"Не удалось запустить генерацию\nБаланс в токенах {telegram_user.balance}")
     await callback.answer(cache_time=500)
