@@ -141,6 +141,7 @@ class DiscordMiddleWare(discord.Client):
         document = BufferedInputFile(file=raw_image, filename=f"{message_hash}.png")
 
         try:
+            await bot.send_photo(chat_id=chat_id, photo=document)
             await bot.send_document(
                 chat_id=chat_id,
                 document=document,
