@@ -98,7 +98,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await user.asave()
 
             await bot.send_message(
-                chat_id=callback.message.chat.id, text=f"Баланс в токенах {user.balance}\n\n{resources}"
+                chat_id=callback.message.chat.id,
+                text=f"Баланс в токенах {user.balance}\n*Примеры генераций* \n{resources}",
+                parse_mode=ParseMode.MARKDOWN_V2
             )
             return
     except Exception as e:
@@ -140,7 +142,9 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
         await bot.send_message(
-            chat_id=callback.message.chat.id, text=f"Баланс в токенах {telegram_user.balance}\n\n{resources}"
+            chat_id=callback.message.chat.id,
+            text=f"Баланс в токенах {telegram_user.balance}\n*Примеры генераций* \n{resources}",
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     except Exception as e:
         logger.error(e)

@@ -3,8 +3,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from main.enums import UserRoleEnum
 
-resources = """
-💡 [Инструкции, промпты и стили](https://t.me/MidjourneyFAQ/5)
+resources = """💡 [Инструкции, промпты и стили](https://t.me/MidjourneyFAQ/5)
 🌆 [Примеры генераций](https://t.me/Midjo_art)
 🤖 [Примеры генераций в стиле CyberPunk](https://t.me/artcyberpunk) 
 🌐 [Наш сайт](https://midjourneypromt.com) 
