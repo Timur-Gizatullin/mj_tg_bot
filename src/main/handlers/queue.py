@@ -21,14 +21,7 @@ bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_previe
 class QueueHandler:
     @staticmethod
     async def exclude_queue(chat_id, telegram_user):
-        help_message = (
-            "🟢Кнопки U1, U2, U3, U4 - предназначены для увеличения "
-            "картинки под соответсвующим номером в высоком разрешении;\n"
-            "🔴Кнопки V1, V2, V3, V4 - предназначены для генерации 4 новых "
-            "изображений исходной с картинкой под соответсвующим номером;\n"
-            "🔁Кнопка предназначена для генерации 4 новых изображений отличающихся по стилистике от первой генерации.\n"
-            "(Стоимость 1 токен)"
-        )
+        await admin_mj_exclude(telegram_user)
 
         logger.debug(r_queue.llen("queue"))
         r_queue.lrem("queue", 1, chat_id)
@@ -105,15 +98,21 @@ async def admin_mj_release(payload, header, message):
         await message.answer(text="Не удалось добавить запрос в очередь, попробуйте еще раз")
 
 
+async def admin_mj_exclude(user: User):
+    if user.role == UserRoleEnum.ADMIN:
+        user.state = UserStateEnum.READY
+        await user.asave()
+
+
 async def update_user(qdata, telegram_user):
     logger.debug(qdata["action"])
     if qdata["action"] in (
-        "imagine",
-        "describe",
-        "vary",
-        "zoom",
-        "pan",
-        "describe_retry",
+            "imagine",
+            "describe",
+            "vary",
+            "zoom",
+            "pan",
+            "describe_retry",
     ):
         telegram_user.balance -= 2
         if telegram_user.balance < 5:
@@ -122,9 +121,9 @@ async def update_user(qdata, telegram_user):
         await telegram_user.asave()
         logger.debug(telegram_user.state)
     elif qdata["action"] in (
-        "upsample",
-        "variation",
-        "reroll",
+            "upsample",
+            "variation",
+            "reroll",
     ):
         telegram_user.balance -= 1
         if telegram_user.balance < 5:
