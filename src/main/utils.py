@@ -2,6 +2,7 @@ import json
 
 import requests
 from aiogram.fsm.state import State, StatesGroup
+from loguru import logger
 from translate import Translator
 
 from main.handlers.utils.const import ATTACHMENTS_URL
@@ -21,8 +22,11 @@ async def is_has_censor(message: str, censor_list: list[str]) -> bool:
 translator = Translator(from_lang="ru", to_lang="en")
 
 
-async def upload_file(file, header: dict[str, str]):
-    payload = {"files": [{"filename": file.file_path, "file_size": file.file_size, "id": "0"}]}
+async def upload_file(file, header: dict[str, str], chat_id):
+    splited_path = file.file_path.split(".")
+    file_name = f"{splited_path[0]}{chat_id}.{splited_path[1]}"
+    payload = {"files": [{"filename": file_name, "file_size": file.file_size, "id": "0"}]}
+    logger.error(payload)
 
     response = requests.post(ATTACHMENTS_URL, data=json.dumps(payload), headers=header)
     attachment = response.json()["attachments"][0] if response.status_code == 200 else None

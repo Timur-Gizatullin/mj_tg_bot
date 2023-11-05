@@ -178,7 +178,7 @@ async def mj_handler(message: Message) -> None:
     if message.text and not message.photo and not message.media_group_id:
         await handle_imagine(message)
     elif message.photo and not message.text and not message.media_group_id and not message.caption:
-        await describe_handler(message, user)
+        await describe_handler(message)
     elif message.photo and message.caption and not message.media_group_id:
         await based_on_photo_imagine(message=message)
 
@@ -265,7 +265,11 @@ async def dale_handler(message: Message):
 
 
 async def handle_imagine(message, img_url: str | None = None):
-    if "\n" in message.text:
+    if message.text and "\n" in message.text:
+        await message.answer("⛔️Промт должен содержать только одну строку⛔️")
+        return
+
+    if message.caption and "\n" in message.caption:
         await message.answer("⛔️Промт должен содержать только одну строку⛔️")
         return
 
@@ -301,7 +305,7 @@ async def blend_images_handler(message: Message):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token, "Content-Type": "application/json"}
 
-    attachment = await upload_file(file=file, header=header)
+    attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
     if not attachment:
         await message.answer("Не удалось загрузить файлы")
         return
@@ -327,7 +331,7 @@ async def based_on_photo_imagine(message: Message):
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token, "Content-Type": "application/json"}
 
-    attachment = await upload_file(file=file, header=header)
+    attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
     if not attachment:
         await message.answer("Не удалось загрузить файлы")
         return
@@ -359,7 +363,7 @@ async def based_on_photo_imagine(message: Message):
 
     if image_data.ok:
         image_data = image_data.json()
-        logger.error(image_data.json())
+        logger.error(image_data)
     else:
         logger.error(image_data.text)
         await message.answer("Не удалось загрузить фото")
@@ -370,13 +374,28 @@ async def based_on_photo_imagine(message: Message):
     await handle_imagine(message=message, img_url=img_url)
 
 
-async def describe_handler(message: Message, user: User):
+async def describe_handler(message: Message):
+    user = await is_user_exist(str(message.chat.id))
+    if not user:
+        await message.answer("Напишите /start")
+        return
+    if user.state == UserStateEnum.PENDING:
+        await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+    if user.balance - 2 < 0:
+        builder = InlineKeyboardBuilder()
+        answer = f"Ваш баланс {user.balance}\n"
+        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+        builder.row(*lk_buttons)
+        await message.answer(answer, reply_markup=builder.as_markup())
+        return
+
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
     token = await mj_user_token_queue.get_sender_token()
     header = {"authorization": token, "Content-Type": "application/json"}
 
-    attachment = await upload_file(file=file, header=header)
+    attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
     if not attachment:
         await message.answer("Не удалось загрузить файл")
         user.state = UserStateEnum.READY
