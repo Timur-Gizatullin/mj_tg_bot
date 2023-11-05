@@ -5,6 +5,7 @@ from aiogram import Router, types
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from loguru import logger
 
 from main.constants import BOT_START_HOST
 from main.enums import ProductEnum
@@ -128,3 +129,25 @@ async def lk_callback(callback: types.CallbackQuery):
 
         await callback.message.answer(answer, reply_markup=builder.as_markup())
         await callback.answer()
+
+
+@menu_router.callback_query(lambda c: c.data.startswith("ref_list"))
+async def ref_callback(callback: types.CallbackQuery):
+    referrals: list[Referral] = await Referral.objects.get_referrals()
+
+    builder = InlineKeyboardBuilder()
+    for referral in referrals:
+        button = types.InlineKeyboardButton(
+            text=f"{referral.name} [{referral.used_count}]",
+            callback_data=f"ref-val_{referral.key}",
+        )
+        builder.row(button)
+
+    await callback.message.answer("Список реферальных ссылок", reply_markup=builder.as_markup())
+
+
+@menu_router.callback_query(lambda c: c.data.startswith("ref-val"))
+async def ref_value_callback(callback: types.CallbackQuery):
+    value = callback.data.split("_")[-1]
+
+    await callback.message.answer(f"{BOT_START_HOST}{value}", parse_mode=ParseMode.HTML)

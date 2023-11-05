@@ -1,6 +1,8 @@
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from main.enums import UserRoleEnum
+
 resources = """
 💡 [Инструкции, промпты и стили](https://t.me/MidjourneyFAQ/5)
 🌆 [Примеры генераций](https://t.me/Midjo_art)
@@ -20,10 +22,13 @@ cancel_builder = InlineKeyboardBuilder()
 cancel_kb = cancel_builder.row(types.InlineKeyboardButton(text="Отмена", callback_data="cancel-job"))
 
 
-async def get_commands_keyboard(type: str):
+async def get_commands_keyboard(type: str, user):
     builder = InlineKeyboardBuilder()
     if type == "start":
         for button in start_buttons:
             builder.row(button)
+
+    if user.role == UserRoleEnum.ADMIN:
+        builder.row(types.InlineKeyboardButton(text="Список реферальных ссылок", callback_data="ref_list"))
 
     return builder.as_markup()

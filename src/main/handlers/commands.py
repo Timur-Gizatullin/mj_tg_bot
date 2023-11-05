@@ -198,7 +198,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
 
-    start_kb = await get_commands_keyboard("start")
+    start_kb = await get_commands_keyboard("start", existing_user)
 
     await message.answer(initial_message, reply_markup=start_kb)
 

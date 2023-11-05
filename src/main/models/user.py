@@ -44,8 +44,8 @@ class UserManager(AbstractUserManager):
     ):
         q_set: QuerySet = self
         q_set = q_set.filter(role=role) if role else q_set
-        q_set = q_set.filter(pay__date__lte=pay_date) if pay_date else q_set
-        q_set = q_set.filter(prompt__date__lte=gen_date) if gen_date else q_set
+        q_set = q_set.filter(pay_date__gte=pay_date) if pay_date else q_set
+        q_set = q_set.filter(gen_date__gte=gen_date) if gen_date else q_set
         q_set = q_set.all()
         q_set = q_set[offset:] if offset else q_set
         q_set = q_set[:limit] if limit else q_set
@@ -59,6 +59,8 @@ class User(AbstractUser):
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Состояние")
+    gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
+    pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
 
     objects = UserManager()

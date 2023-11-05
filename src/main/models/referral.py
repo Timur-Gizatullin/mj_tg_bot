@@ -32,6 +32,10 @@ class ReferralManager(models.Manager):
     def get_referral_by_user(self, user: User) -> "Referral":
         return self.filter(referrer=user).first()
 
+    @sync_to_async()
+    def get_referrals(self) -> list["Referral"]:
+        return list(self.exclude(name=None).exclude(name="").all())
+
 
 class Referral(models.Model):
     key: str = models.CharField(unique=True, null=False, verbose_name="Уникальный ключ")
