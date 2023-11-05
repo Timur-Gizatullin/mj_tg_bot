@@ -54,6 +54,7 @@ class UserManager(AbstractUserManager):
 
 
 class User(AbstractUser):
+    username = models.CharField(null=True, unique=False, blank=True)
     telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме")
     chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм")
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
@@ -62,6 +63,8 @@ class User(AbstractUser):
     gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
     pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
+
+    USERNAME_FIELD = "telegram_username"
 
     objects = UserManager()
 
