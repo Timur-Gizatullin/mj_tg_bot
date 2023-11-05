@@ -10,7 +10,7 @@ from aiogram_media_group import media_group_handler
 from decouple import config
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, ProductEnum, UserRoleEnum, UserStateEnum
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import (
@@ -25,6 +25,7 @@ from main.models import (
     Describe,
     GptContext,
     Pay,
+    Price,
     Referral,
     TelegramAnswer,
     User,
@@ -84,6 +85,84 @@ async def successful_payment(message: types.Message):
             )
 
 
+@dp.message(F.text.lower() == "gpt")
+async def gpt_command(message: Message, state: FSMContext):
+    answer = (
+        "Введи свой запрос.\n\n"
+        "Бот поддерживает функционал CHAT GPT, максимальный контекст - 15 запросов.\n\n"
+        "📂Для работы с файлами, сначала вставьте ссылку в начале сообщения на файл "
+        "(например  Google или Яндекс  диск) и далее укажите что с ним необходимо сделать."
+    )
+    await message.answer(answer)
+    await state.set_state(MenuState.gpt)
+
+
+@dp.message(F.text.lower() == "dall-e")
+async def dalle_command(message: Message, state: FSMContext):
+    intro_message = (
+        "🌆Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n\n"
+        "🔞Внимание!!! Строго запрещены запросы изображения 18+, работает AI модератор, несоблюдение правил приведет к бану!"
+    )
+
+    await message.answer(intro_message)
+    await state.set_state(MenuState.dalle)
+
+
+@dp.message(F.text.lower() == "midjourney")
+async def mj_command(message: Message, state: FSMContext):
+    intro_message = (
+        "🌆Для создания изображения отправь боту только ключевые фразы на русском или английском(не смешивать), раздели их логической запятой;\nНапример:\n"
+        "`Бред Пит в роли Терминатор сидит на мотоцикле, огонь на заднем плане`\n\n"
+        "❗Порядок слов очень важен! Чем раньше слово, тем сильнее его вес;\n\n"
+        "🛑 Не нужно писать  “создай изображение”, это ухудшит результат;\n\n"
+        "👨‍🎨 Дорисовать твое изображение\n\n"
+        "Отправь картинку боту и напиши промпт в комментарии к ней;\n\n"
+        "🖋Описать изображение\n\n"
+        "Отправь боту свое изображение без подписи и он пришлет четыре варианта ее описания;\n\n"
+        "🌇🎆 Объединить изображение\n\n"
+        "Отправь боту твои изображения и он объеденит их.\n"
+        "💡Для наилучшей работы функции рекомендуем использовать не более 4 изображений, а так же, одинаковое или близкое соотношение сторон изображения;\n\n"
+        "🔞Внимание!!! Строго запрещены запросы изображения 18+, работает AI модератор, несоблюдение правил приведет к бану!"
+    )
+    await message.answer(intro_message, parse_mode=ParseMode.MARKDOWN)
+    await state.set_state(MenuState.mj)
+
+
+@dp.message(F.text.lower() == "оплата")
+async def pay_command(message: Message, state: FSMContext):
+    user = await is_user_exist(str(message.chat.id))
+    answer = (
+        f"Ваш баланс в токенах: {user.balance}\n"
+        "Одна генерация Midjourney = 2\n"
+        "Отдельно тарифицируются генерации Upscale:\n"
+        "Увеличение базового изображения, зум, изменение масштаьа и тд = 2\n"
+        "Upscale 2x = 4\n"
+        "Upscale 4x = 8\n"
+        "Одна генерация DALL-E = 2\n"
+        "Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
+        "При оплате в USDT - 1 usdt = 100р"
+    )
+
+    prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)
+    options_button = []
+    for price in prices:
+        button = types.InlineKeyboardButton(
+            text=f"{price.quantity} {price.description} = {price.amount} руб",
+            callback_data=f"pay-options_{price.quantity}_{price.amount}",
+        )
+        options_button.append(button)
+
+    builder = InlineKeyboardBuilder()
+    j = 0
+    for i in range(len(options_button) // 2):
+        builder.row(options_button[j], options_button[j + 1])
+        j += 2
+    if range(len(options_button) % 2 != 0):
+        builder.row(options_button[-1])
+
+    await message.answer(answer, reply_markup=builder.as_markup())
+
+
 @dp.message(CommandStart(deep_link=True))
 async def deep_start(message: Message, command: CommandObject, state: FSMContext):
     key = command.args
@@ -123,8 +202,21 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     await message.answer(initial_message, reply_markup=start_kb)
 
+    kb = [
+        [
+            types.KeyboardButton(text="MidJourney"),
+            types.KeyboardButton(text="DALL-E"),
+            types.KeyboardButton(text="GPT"),
+            types.KeyboardButton(text="Оплата"),
+        ],
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb, resize_keyboard=True, input_field_placeholder="Выберите сервис..."
+    )
+
     await message.answer(
-        f"Запуская данный бот Вы даете согласие на правила использования нашего сервиса.\n\n{resources}"
+        f"Запуская данный бот Вы даете согласие на правила использования нашего сервиса.\n\n{resources}",
+        reply_markup=keyboard,
     )
 
 
