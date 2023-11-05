@@ -90,6 +90,15 @@ class QueueHandler:
 
 
 async def admin_mj_release(payload, header, message):
+    data = json.dumps(
+        {
+            "chat_id": message.chat.id,
+            "start": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+    )
+    r_queue.rpush(f"admin", message.chat.id)
+    r_queue.rpush(f"{message.chat.id}", data)
+
     response = requests.post(INTERACTION_URL, json=payload, headers=header)
     logger.debug(response.text)
     if response.ok:
