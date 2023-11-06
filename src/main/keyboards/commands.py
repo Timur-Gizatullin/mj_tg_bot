@@ -29,5 +29,7 @@ async def get_commands_keyboard(type: str, user):
 
     if user.role == UserRoleEnum.ADMIN:
         builder.row(types.InlineKeyboardButton(text="Список реферальных ссылок", callback_data="ref_list"))
+        builder.row(types.InlineKeyboardButton(text="Cтатистика: пользователи", callback_data="stats_user"))
+        builder.row(types.InlineKeyboardButton(text="Cтатистика: реферралы", callback_data="stats_ref"))
 
     return builder.as_markup()

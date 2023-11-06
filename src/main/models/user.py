@@ -1,3 +1,5 @@
+from datetime import date
+
 from asgiref.sync import sync_to_async
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
@@ -14,8 +16,24 @@ class UserManager(AbstractUserManager):
         return list(self.filter(role=UserRoleEnum.ADMIN).all())
 
     @sync_to_async()
+    def get_users_count(self):
+        return len(self.exclude(role=UserRoleEnum.ADMIN).all())
+
+    @sync_to_async()
+    def get_users_today_count(self):
+        return len(self.filter(date_joined__contains=date.today()).exclude(role=UserRoleEnum.ADMIN).all())
+
+    @sync_to_async()
     def get_user_by_chat_id(self, chat_id: str) -> "User":
         return self.filter(chat_id=chat_id).first()
+
+    @sync_to_async()
+    def get_referrals_count(self):
+        return len(self.exclude(invited_by=None).all())
+
+    @sync_to_async()
+    def get_referrals_today_count(self):
+        return len(self.filter(date_joined__contains=date.today()).exclude(invited_by=None).all())
 
     def get_users_to_send_message(
         self,
@@ -46,6 +64,8 @@ class User(AbstractUser):
     gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
     pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
+    invited_by = models.ForeignKey("User", related_name="invites", on_delete=models.DO_NOTHING,
+                                   verbose_name="Пригласил", null=True, default=None, blank=True)
     fail_in_row: str = models.IntegerField(default=0, verbose_name="Ошибок подряд")
 
     objects = UserManager()

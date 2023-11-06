@@ -7,6 +7,7 @@ import django
 from aiogram.types import BotCommand
 from loguru import logger
 
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
@@ -17,7 +18,7 @@ from main.handlers.callbacks.midjourney import mj_router  # noqa: E402
 from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.commands import bot, dp  # noqa: E402
 from main.handlers.queue import r_queue  # noqa:E402
-
+from main.handlers.callbacks.stats import stat_router  # noqa:E402
 
 async def clear_queues():
     for i in r_queue.lrange("queue", 0, -1):
@@ -34,6 +35,7 @@ async def main() -> None:
     dp.include_router(pay_router)
     dp.include_router(gpt_router)
     dp.include_router(dalle_router)
+    dp.include_router(stat_router)
 
     await clear_queues()
 
