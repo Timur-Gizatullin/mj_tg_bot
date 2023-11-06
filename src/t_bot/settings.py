@@ -149,3 +149,6 @@ STATICFILES_DIR = f"/{BASE_DIR}static/"
 STATIC_ROOT = "static/"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 30000

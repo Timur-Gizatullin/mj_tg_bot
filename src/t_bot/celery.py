@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta
 
 from aiogram import Bot
-from aiogram.enums import ParseMode
+from aiogram.enums import ParseMode, ChatMemberStatus
 from celery import Celery
 from django.conf import settings
 
@@ -19,6 +19,7 @@ import django  # noqa:E402
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
+from main.models import Channel  # noqa:E402
 from main.enums import UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
 from main.models import User  # noqa:E402
@@ -26,10 +27,47 @@ from main.models import User  # noqa:E402
 app = Celery("t_bot")
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
+banned_message_answer = """⛔️Возможно Ваш запрос не прошел  модерацию! Пожалуйста пересмотрите текст или приложенное изображение и попробуйте снова! 
+
+Напоминаем запрещенные темы:
+
+1. Насилие (действия, кровь и т.д.)
+
+2. Эротика (части тела, порнографию, обнажение и т.д.)
+
+3. Публичные фигуры в плохом контексте 
+
+4. Расизм"""
+
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, check_queue.s())
+
+
+@app.task()
+def check_subscriptions():
+    users: list[User] = list(User.objects.filter(balance__lte=5).all())
+    channels: list[Channel] = list(Channel.objects.all())
+    logger.debug(len(users))
+    logger.debug(len(channels))
+
+    async def task(users, channels):
+        logger.debug(channels)
+        if channels:
+            for user in users:
+                for channel in channels:
+                    try:
+                        logger.warning(f"CHANNEL {channel.channel}")
+                        member = await bot.get_chat_member(f"@{channel.channel}", int(user.chat_id))
+                        if member.status == ChatMemberStatus.LEFT:
+                            break
+                        user.balance = 5
+                        await user.asave()
+                    except Exception as e:
+                        logger.warning(e)
+
+    asyncio.run(task(users, channels))
 
 
 @app.task()
@@ -54,7 +92,7 @@ def check_queue():
                 user.save()
 
                 asyncio.run(bot.send_message(
-                    chat_id=user.chat_id, text="Миджорни не пропустил или не смог обработать запрос, попробуйте еще раз"
+                    chat_id=user.chat_id, text=banned_message_answer
                 ))
                 if queue is base_queue:
                     r_queue.lpop("queue", j_chat_id)

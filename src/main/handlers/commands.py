@@ -193,8 +193,8 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 
     username = message.from_user.username if message.from_user.username else message.from_user.id
     if not existing_user:
-        user = User(telegram_username=username, chat_id=message.chat.id)
-        await user.asave()
+        existing_user = User(telegram_username=username, chat_id=message.chat.id)
+        await existing_user.asave()
 
     initial_message = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.START)
 

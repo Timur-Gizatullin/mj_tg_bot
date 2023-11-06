@@ -14,25 +14,8 @@ class UserManager(AbstractUserManager):
         return list(self.filter(role=UserRoleEnum.ADMIN).all())
 
     @sync_to_async()
-    def get_user_by_username(self, username: str) -> "User":
-        return self.filter(telegram_username=username).first()
-
-    @sync_to_async()
     def get_user_by_chat_id(self, chat_id: str) -> "User":
         return self.filter(chat_id=chat_id).first()
-
-    def get_user_by_id(self, chat_id: str) -> "User":
-        return self.filter(chat_id=chat_id).first()
-
-    @sync_to_async()
-    def get_or_create_async(self, telegram_username: int, chat_id: int) -> "User":
-        user = self.filter(telegram_username=telegram_username, chat_id=chat_id).first()
-        if user:
-            return user
-        user = User(telegram_username=telegram_username, chat_id=chat_id)
-        user.save()
-
-        return user
 
     def get_users_to_send_message(
         self,
@@ -54,23 +37,21 @@ class UserManager(AbstractUserManager):
 
 
 class User(AbstractUser):
-    username = models.CharField(null=True, unique=False, blank=True)
+    username = models.CharField(null=True, unique=True, blank=True)
     telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме")
     chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм")
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
-    state = models.CharField(choices=UserStateEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Состояние")
+    state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
     gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
     pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
-
-    USERNAME_FIELD = "telegram_username"
 
     objects = UserManager()
 
     def __str__(self):
         name = self.email if self.email else self.telegram_username
-        return name
+        return f"{name} #{self.pk}"
 
     class Meta:
         verbose_name = "Пользователь"
