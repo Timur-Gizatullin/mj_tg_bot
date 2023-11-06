@@ -266,6 +266,9 @@ async def mj_handler(message: Message) -> None:
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         return
+    if user.state == UserStateEnum.BANNED:
+        await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
+        return
 
     if message.text and not message.photo and not message.media_group_id:
         await handle_imagine(message)
@@ -284,6 +287,9 @@ async def gpt_handler(message: types.Message):
 
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+    if user.state == UserStateEnum.BANNED:
+        await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
         return
 
     user.state = UserStateEnum.PENDING
@@ -473,6 +479,9 @@ async def describe_handler(message: Message):
         return
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
+        return
+    if user.state == UserStateEnum.BANNED:
+        await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
         return
     if user.balance - 2 < 0:
         builder = InlineKeyboardBuilder()
