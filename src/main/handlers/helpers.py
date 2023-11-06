@@ -72,6 +72,10 @@ async def is_ready(telegram_user, callback):
         await callback.message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         await callback.answer()
         return False
+    if telegram_user.state == UserStateEnum.BANNED:
+        await callback.message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
+        await callback.answer()
+        return False
 
     return True
 
