@@ -226,9 +226,13 @@ async def callback_pan(callback: types.CallbackQuery):
 async def suggestion_callback(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     message_id = callback.data.split("_")[-1]
-    data = callback_data_util.get(message_id)
+    data = callback_data_util.get(message_id, None)
     logger.debug(data)
-    message = data["text"]
+    if not data:
+        await callback.message.answer("Сообщение удалено из кэша, введите ваш промпт снова")
+        await callback.answer()
+        return
+    message = data.get("text", None)
     if not message:
         await callback.message.answer("Сообщение удалено из кэша, введите ваш промпт снова")
         await callback.answer()
@@ -245,8 +249,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
-
-    if message and await is_has_censor(prompt, ban_words):
+    logger.debug(prompt)
+    if message and not await is_has_censor(prompt, ban_words):
         await callback.message.answer(censor_message_answer)
         user.state = UserStateEnum.READY
         await user.asave()
@@ -282,6 +286,8 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
         prompt = callback.message.text.split("\n\n")[choose - 1][2:]
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
+
+    prompt = prompt if prompt[-1] != "." else prompt[:-1]
 
     img_url = callback_data_util.get(img_id, None)
 

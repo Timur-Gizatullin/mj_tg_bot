@@ -215,7 +215,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     )
 
     await message.answer(
-        f"Запуская данный бот Вы даете согласие на правила использования нашего сервиса.\n\n{resources}",
+        f"Запуская данный бот Вы даете согласие на правила использования нашего сервиса.\n\n*Примеры генераций:* \n{resources}",
         reply_markup=keyboard,
     )
 
@@ -292,7 +292,7 @@ async def gpt_handler(message: types.Message):
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
-    if message.text and await is_has_censor(message.text, ban_words):
+    if message.text and not await is_has_censor(message.text, ban_words):
         await message.answer(censor_message_answer)
         return
 

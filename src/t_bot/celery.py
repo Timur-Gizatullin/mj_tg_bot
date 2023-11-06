@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta
 
 from aiogram import Bot
-from aiogram.enums import ParseMode, ChatMemberStatus
+from aiogram.enums import ChatMemberStatus, ParseMode
 from celery import Celery
 from django.conf import settings
 
@@ -19,9 +19,9 @@ import django  # noqa:E402
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import Channel  # noqa:E402
-from main.enums import UserStateEnum  # noqa:E402
+from main.enums import UserRoleEnum, UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
+from main.models import Channel  # noqa:E402
 from main.models import User  # noqa:E402
 
 app = Celery("t_bot")
@@ -43,11 +43,12 @@ banned_message_answer = """⛔️Возможно Ваш запрос не пр�
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, check_queue.s())
+    sender.add_periodic_task(60.0 * 60 * 24, check_subscriptions.s())
 
 
 @app.task()
 def check_subscriptions():
-    users: list[User] = list(User.objects.filter(balance__lte=5).all())
+    users: list[User] = list(User.objects.filter(balance__lte=5, role=UserRoleEnum.BASE).all())
     channels: list[Channel] = list(Channel.objects.all())
     logger.debug(len(users))
     logger.debug(len(channels))
@@ -91,9 +92,7 @@ def check_queue():
                 user.state = UserStateEnum.READY
                 user.save()
 
-                asyncio.run(bot.send_message(
-                    chat_id=user.chat_id, text=banned_message_answer
-                ))
+                asyncio.run(bot.send_message(chat_id=user.chat_id, text=banned_message_answer))
                 if queue is base_queue:
                     r_queue.lpop("queue", j_chat_id)
                 if queue is admin_queue:

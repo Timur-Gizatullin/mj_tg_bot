@@ -43,7 +43,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     ban_words = await BanWord.objects.get_active_ban_words()
     censor_message_answer = await TelegramAnswer.objects.get_message_by_type(answer_type=AnswerTypeEnum.CENSOR)
 
-    if message and await is_has_censor(prompt, ban_words):
+    if message and not await is_has_censor(prompt, ban_words):
         await callback.message.answer(censor_message_answer)
         user.state = UserStateEnum.READY
         await user.asave()
@@ -100,7 +100,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await bot.send_message(
                 chat_id=callback.message.chat.id,
                 text=f"Баланс в токенах {user.balance}\n*Примеры генераций* \n{resources}",
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
             return
     except Exception as e:
@@ -125,6 +125,8 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     except Exception:
         prompt = callback.message.text.split("\n")[choose - 1][2:]
 
+    prompt = prompt if prompt[-1] != "." else prompt[:-1]
+
     try:
         await callback.message.answer(f"Идет генерация... ⌛\n")
         img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
@@ -144,7 +146,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
         await bot.send_message(
             chat_id=callback.message.chat.id,
             text=f"Баланс в токенах {telegram_user.balance}\n*Примеры генераций* \n{resources}",
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
     except Exception as e:
         logger.error(e)

@@ -116,12 +116,12 @@ async def admin_mj_exclude(user: User):
 async def update_user(qdata, telegram_user):
     logger.debug(qdata["action"])
     if qdata["action"] in (
-            "imagine",
-            "describe",
-            "vary",
-            "zoom",
-            "pan",
-            "describe_retry",
+        "imagine",
+        "describe",
+        "vary",
+        "zoom",
+        "pan",
+        "describe_retry",
     ):
         telegram_user.balance -= 2
         if telegram_user.balance < 5:
@@ -130,9 +130,9 @@ async def update_user(qdata, telegram_user):
         await telegram_user.asave()
         logger.debug(telegram_user.state)
     elif qdata["action"] in (
-            "upsample",
-            "variation",
-            "reroll",
+        "upsample",
+        "variation",
+        "reroll",
     ):
         telegram_user.balance -= 1
         if telegram_user.balance < 5:

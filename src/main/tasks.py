@@ -1,23 +1,22 @@
 import json
 
 import requests
-from loguru import logger
 
 from main.enums import UserRoleEnum
-from main.models import User, BanWord
+from main.models import BanWord, User
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
 
 @app.task(bind=True, name="Рассылка")
 def send_message_to_users(
-        self,
-        message: str | None = None,
-        role: int | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        pay_date: int | None = None,
-        gen_date: int | None = None,
+    self,
+    message: str | None = None,
+    role: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    pay_date: int | None = None,
+    gen_date: int | None = None,
 ):
     users = User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date)
     for user in users:
@@ -30,8 +29,9 @@ def load_users(self):
         users = json.load(file)
         for user in users:
             try:
-                user_dto = User(telegram_username=user["username"], chat_id=str(user["id"]),
-                                balance=user["generations_count"] * 2)
+                user_dto = User(
+                    telegram_username=user["username"], chat_id=str(user["id"]), balance=user["generations_count"] * 2
+                )
                 if user["is_premium"]:
                     user_dto.role = UserRoleEnum.PREMIUM
                 user_dto.save()

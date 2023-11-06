@@ -165,7 +165,8 @@ class DiscordMiddleWare(discord.Client):
         await bot.send_message(
             chat_id=chat_id,
             text=f"Баланс в токенах: {telegram_user.balance}\n\n*Примеры генераций:* \n{resources}",
-            parse_mode=ParseMode.MARKDOWN_V2)
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
 
 
 if __name__ == "__main__":

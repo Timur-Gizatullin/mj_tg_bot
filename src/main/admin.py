@@ -3,14 +3,16 @@ from django.contrib import admin
 from main.models import (
     BanWord,
     Blend,
+    Channel,
     Describe,
+    DsMjUser,
     GptContext,
     Pay,
     Price,
     Prompt,
     Referral,
     TelegramAnswer,
-    User, Channel,
+    User,
 )
 from main.models.user import UserAudit
 
@@ -25,3 +27,4 @@ admin.site.register(Blend)
 admin.site.register(GptContext)
 admin.site.register(Price)
 admin.site.register(Channel)
+admin.site.register(DsMjUser)
