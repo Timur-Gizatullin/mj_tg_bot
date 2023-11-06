@@ -63,13 +63,13 @@ async def callbacks_variations(callback: types.CallbackQuery):
         return
 
     if action == "V1":
-        await send_variation_trigger(variation_index="1", queue=queue, message=callback.message)
+        await send_variation_trigger(variation_index="1", queue=queue, message=callback.message, user=telegram_user)
     elif action == "V2":
-        await send_variation_trigger(variation_index="2", queue=queue, message=callback.message)
+        await send_variation_trigger(variation_index="2", queue=queue, message=callback.message, user=telegram_user)
     elif action == "V3":
-        await send_variation_trigger(variation_index="3", queue=queue, message=callback.message)
+        await send_variation_trigger(variation_index="3", queue=queue, message=callback.message, user=telegram_user)
     elif action == "V4":
-        await send_variation_trigger(variation_index="4", queue=queue, message=callback.message)
+        await send_variation_trigger(variation_index="4", queue=queue, message=callback.message, user=telegram_user)
 
     await callback.answer()
 
@@ -87,7 +87,7 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     if not await is_can_use(telegram_user, callback, cost):
         return
 
-    await send_upsample_trigger(upsample_index="1", queue=queue, version=action, message=callback.message)
+    await send_upsample_trigger(upsample_index="1", queue=queue, version=action, message=callback.message, user=telegram_user)
 
     await callback.answer()
 
@@ -122,13 +122,13 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
     await callback.message.answer(help_message)
 
     if action == "U1":
-        await send_upsample_trigger(upsample_index="1", queue=queue, message=callback.message)
+        await send_upsample_trigger(upsample_index="1", queue=queue, message=callback.message, user=telegram_user)
     elif action == "U2":
-        await send_upsample_trigger(upsample_index="2", queue=queue, message=callback.message)
+        await send_upsample_trigger(upsample_index="2", queue=queue, message=callback.message, user=telegram_user)
     elif action == "U3":
-        await send_upsample_trigger(upsample_index="3", queue=queue, message=callback.message)
+        await send_upsample_trigger(upsample_index="3", queue=queue, message=callback.message, user=telegram_user)
     elif action == "U4":
-        await send_upsample_trigger(upsample_index="4", queue=queue, message=callback.message)
+        await send_upsample_trigger(upsample_index="4", queue=queue, message=callback.message, user=telegram_user)
 
     await callback.answer()
 
@@ -145,9 +145,9 @@ async def callback_vary(callback: types.CallbackQuery):
         return
 
     if action == "strong":
-        await send_vary_trigger(vary_type="high_variation", queue=queue, message=callback.message)
+        await send_vary_trigger(vary_type="high_variation", queue=queue, message=callback.message, user=telegram_user)
     elif action == "subtle":
-        await send_vary_trigger(vary_type="low_variation", queue=queue, message=callback.message)
+        await send_vary_trigger(vary_type="low_variation", queue=queue, message=callback.message, user=telegram_user)
 
     await callback.answer()
 
@@ -163,7 +163,7 @@ async def callback_reset(callback: types.CallbackQuery):
         return
 
     await send_reset_trigger(
-        message_id=queue.discord_message_id, message_hash=queue.message_hash, message=callback.message
+        message_id=queue.discord_message_id, message_hash=queue.message_hash, message=callback.message, user=telegram_user
     )
 
     await callback.answer()
@@ -181,9 +181,9 @@ async def callback_zoom(callback: types.CallbackQuery):
         return
 
     if action == "2":
-        await send_zoom_trigger(queue=queue, zoomout="1", message=callback.message)
+        await send_zoom_trigger(queue=queue, zoomout="1", message=callback.message, user=telegram_user)
     elif action == "1.5":
-        await send_zoom_trigger(queue=queue, zoomout=action, message=callback.message)
+        await send_zoom_trigger(queue=queue, zoomout=action, message=callback.message, user=telegram_user)
 
     await callback.answer()
 
@@ -199,27 +199,9 @@ async def callback_pan(callback: types.CallbackQuery):
     if not await is_can_use(telegram_user, callback, 2):
         return
 
-    await send_pan_trigger(queue=queue, direction=action, message=callback.message)
+    await send_pan_trigger(queue=queue, direction=action, message=callback.message, user=telegram_user)
 
     await callback.answer()
-
-
-# @mj_router.callback_query(lambda c: c.data.startswith("describe"))
-# async def callbacks_describe(callback: types.CallbackQuery):
-#     action = callback.data.split("_")[1]
-#     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
-#
-#     if not await is_can_use(telegram_user, callback, 2):
-#         return
-#
-#     if callback.data != "reset" and action != "all":
-#         prompt = callback.message.caption.split("\n\n")[int(action)]
-#         logger.debug(callback.message.caption)
-#         logger.debug(prompt)
-#
-#         await imagine_trigger(message=callback.message, prompt=prompt)
-#
-#     await callback.answer()
 
 
 @mj_router.callback_query(lambda c: c.data.startswith("suggestion"))
@@ -268,7 +250,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
         if data["img"]:
             prompt = f"{data['img']} {prompt}"
 
-        await imagine_trigger(callback.message, prompt)
+        await imagine_trigger(callback.message, prompt, user=user)
         await callback.answer(cache_time=2000)
 
 
@@ -293,6 +275,6 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
 
     prompt = f"{img_url} {prompt}" if img_url else prompt
 
-    await imagine_trigger(message=callback.message, prompt=prompt)
+    await imagine_trigger(message=callback.message, prompt=prompt, user=telegram_user)
 
     await callback.answer()

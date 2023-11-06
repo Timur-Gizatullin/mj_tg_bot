@@ -252,7 +252,7 @@ async def mj_group_handler(messages: list[Message]) -> None:
         user=user, group_id=media_list[0].group_id, uploaded_filename="".join(file_names), chat_id=messages[0].chat.id
     )
     await new_blend.asave()
-    await blend_trigger(media_list, answer)
+    await blend_trigger(media_list, answer, user)
 
 
 @dp.message(MenuState.mj)
@@ -272,7 +272,7 @@ async def mj_handler(message: Message) -> None:
     elif message.photo and not message.text and not message.media_group_id and not message.caption:
         await describe_handler(message)
     elif message.photo and message.caption and not message.media_group_id:
-        await based_on_photo_imagine(message=message)
+        await based_on_photo_imagine(message=message, user=user)
 
 
 @dp.message(MenuState.gpt)
@@ -394,7 +394,7 @@ async def blend_images_handler(message: Message):
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token()
+    token = await mj_user_token_queue.get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
@@ -417,10 +417,10 @@ async def blend_images_handler(message: Message):
     await new_blend.asave()
 
 
-async def based_on_photo_imagine(message: Message):
+async def based_on_photo_imagine(message: Message, user):
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token()
+    token = await mj_user_token_queue.get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
@@ -484,7 +484,7 @@ async def describe_handler(message: Message):
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token()
+    token = await mj_user_token_queue.get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)

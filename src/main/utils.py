@@ -1,11 +1,17 @@
 import json
 
 import requests
+from aiogram import Bot
 from aiogram.fsm.state import State, StatesGroup
 from loguru import logger
 from translate import Translator
 
+from main.enums import UserRoleEnum
 from main.handlers.utils.const import ATTACHMENTS_URL
+from main.models import User, DsMjUser
+
+host = "http://185.209.22.145:8000"
+user_uri = "admin/main/user/{}/change/"
 
 
 async def is_has_censor(message: str, censor_list: list[str]) -> bool:
@@ -37,6 +43,16 @@ async def upload_file(file, header: dict[str, str], chat_id):
 async def put_file(attachment, downloaded_file):
     headers = {"Content-Type": "image/png"}
     return requests.put(attachment["upload_url"], data=downloaded_file, headers=headers)
+
+
+async def notify_admins(bot: Bot, banned_user: User | None = None, banned_mj_user: DsMjUser | None = None):
+    admins: list[User] = await User.objects.get_admins()
+    if banned_user:
+        message = f"Пользователь с чат ID *{banned_user.chat_id}* был забанен автоматически \nссылка на пользователя: {host}/{user_uri.format(banned_user.pk)}"
+    else:
+        message = f"Аккаунт миджорни с ID *{banned_mj_user.pk}* был забанен, пожалуйста проверьте"
+    for admin in admins:
+        await bot.send_message(chat_id=admin.chat_id, text=message)
 
 
 class BlendStateMachine(StatesGroup):

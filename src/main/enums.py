@@ -22,6 +22,7 @@ class UserRoleEnum(BaseStrEnum):
 class UserStateEnum(BaseStrEnum):
     PENDING = "PENDING"
     READY = "READY"
+    BANNED = "BANNED"
 
 
 class MerchantEnum(BaseStrEnum):

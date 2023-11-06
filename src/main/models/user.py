@@ -46,6 +46,7 @@ class User(AbstractUser):
     gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
     pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
+    fail_in_row: str = models.IntegerField(default=0, verbose_name="Ошибок подряд")
 
     objects = UserManager()
 

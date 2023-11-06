@@ -23,6 +23,8 @@ from main.enums import UserRoleEnum, UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
 from main.models import Channel  # noqa:E402
 from main.models import User  # noqa:E402
+from main.utils import notify_admins  # noqa:E402
+from main.handlers.utils.interactions import mj_user_token_queue  # noqa:E402
 
 app = Celery("t_bot")
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
@@ -79,24 +81,41 @@ def check_queue():
     time = len(base_queue) * 30 + 120
     logger.info(f"BASE QUEUE LEN: {len(base_queue)}")
     logger.info(f"ADMIN QUEUE LEN: {len(admin_queue)}")
-    for queue in queues:
-        for chat_id in queue:
-            j_chat_id = json.loads(chat_id)
-            queue_data = r_queue.lrange(j_chat_id, 0, -1)
-            queue_data = json.loads(queue_data[-1])
-            start = queue_data["start"]
-            diff = datetime.now() - datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-            logger.info(diff)
-            if diff >= timedelta(seconds=time):
-                user = User.objects.filter(chat_id=j_chat_id).first()
-                user.state = UserStateEnum.READY
-                user.save()
 
-                asyncio.run(bot.send_message(chat_id=user.chat_id, text=banned_message_answer))
-                if queue is base_queue:
-                    r_queue.lpop("queue", j_chat_id)
-                if queue is admin_queue:
-                    r_queue.lpop("admin", j_chat_id)
+    async def task(base_queue, admin_queue, time, queues):
+        for queue in queues:
+            for chat_id in queue:
+                j_chat_id = json.loads(chat_id)
+                queue_data = r_queue.lrange(j_chat_id, 0, -1)
+                queue_data = json.loads(queue_data[-1])
+                start = queue_data["start"]
+                diff = datetime.now() - datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+                logger.info(diff)
+
+                if diff >= timedelta(seconds=time):
+                    user = await User.objects.get_user_by_chat_id(chat_id=j_chat_id)
+                    user.state = UserStateEnum.READY
+                    user.fail_in_row += 1
+                    await user.asave()
+
+                    await bot.send_message(chat_id=user.chat_id, text=banned_message_answer)
+
+                    await mj_user_token_queue.update_sender(is_fail=True, user=user)
+
+                    if user.fail_in_row >= 1:
+                        try:
+                            user.state = UserStateEnum.BANNED
+                            await user.asave()
+                            await notify_admins(bot=bot, banned_user=user)
+                        except Exception as e:
+                            logger.error(e)
+
+                    if queue is base_queue:
+                        r_queue.lpop("queue", j_chat_id)
+                    if queue is admin_queue:
+                        r_queue.lpop("admin", j_chat_id)
+
+    asyncio.run(task(base_queue, admin_queue, time, queues))
 
 
 app.config_from_object(settings, namespace="CELERY")

@@ -86,6 +86,8 @@ class QueueHandler:
             if response.ok:
                 await message.answer(text="Идет генерация... ⌛")
             else:
+                user.state = UserStateEnum.READY
+                await user.asave()
                 await message.answer(text="Не удалось добавить запрос в очередь, попробуйте еще раз")
 
 
@@ -113,7 +115,8 @@ async def admin_mj_exclude(user: User):
         await user.asave()
 
 
-async def update_user(qdata, telegram_user):
+async def update_user(qdata, telegram_user: User):
+    telegram_user.fail_in_row = 0
     logger.debug(qdata["action"])
     if qdata["action"] in (
         "imagine",
