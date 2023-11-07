@@ -25,14 +25,13 @@ from main.models import User  # noqa:E402
 async def clear_queues():
     for i in r_queue.lrange("queue", 0, -1):
         logger.debug("Remove elements form queue")
-        chat_id = (r_queue.lpop("queue")).decode()
-        user = User.objects.filter(chat_id=chat_id, state=UserStateEnum.PENDING).first()
-        user.state = UserStateEnum.READY
-        user.save()
+        r_queue.lpop("queue")
     for i in r_queue.lrange("release", 0, -1):
         logger.debug("Remove elements form release")
-        chat_id = (r_queue.lpop("release")).decode()
-        user = User.objects.filter(chat_id=chat_id, state=UserStateEnum.PENDING).first()
+        r_queue.lpop("release")
+
+    users = User.objects.filter(state=UserStateEnum.PENDING).all()
+    for user in users:
         user.state = UserStateEnum.READY
         user.save()
 
