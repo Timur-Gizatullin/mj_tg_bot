@@ -25,3 +25,4 @@ from main.models.prompts import Prompt
 from main.models.referral import Referral
 from main.models.telegram_answer import TelegramAnswer
 from main.models.user import User
+
