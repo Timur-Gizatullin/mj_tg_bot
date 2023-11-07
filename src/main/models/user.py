@@ -109,4 +109,4 @@ class UserFilter(admin.SimpleListFilter):
 
 
 class UserAudit(admin.ModelAdmin):
-    list_filter = ("role", UserFilter, "state")
+    list_filter = ("role", "state")
