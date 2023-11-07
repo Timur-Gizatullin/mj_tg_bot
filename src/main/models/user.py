@@ -16,6 +16,10 @@ class UserManager(AbstractUserManager):
         return list(self.filter(role=UserRoleEnum.ADMIN).all())
 
     @sync_to_async()
+    def get_pending_users(self):
+        return list(self.filter(state=UserStateEnum.PENDING).all())
+
+    @sync_to_async()
     def get_users_count(self):
         return len(self.exclude(role=UserRoleEnum.ADMIN).all())
 

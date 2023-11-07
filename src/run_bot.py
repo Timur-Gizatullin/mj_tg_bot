@@ -30,10 +30,10 @@ async def clear_queues():
         logger.debug("Remove elements form release")
         r_queue.lpop("release")
 
-    users = User.objects.filter(state=UserStateEnum.PENDING).all()
+    users = await User.objects.get_pending_users()
     for user in users:
         user.state = UserStateEnum.READY
-        user.save()
+        await user.asave()
 
 
 async def main() -> None:
