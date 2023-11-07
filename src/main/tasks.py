@@ -8,7 +8,7 @@ from decouple import config
 from loguru import logger
 
 from main.enums import UserRoleEnum
-from main.models import BanWord, Referral, User
+from main.models import BanWord, Referral, User, Blend, Describe, Prompt, Pay
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -85,6 +85,55 @@ def get_ref_stat(self, chat_id):
         worksheet.write(f"C{i + 2}", alive)
         worksheet.write(f"D{i + 2}", per_day)
         worksheet.write(f"E{i + 2}", per_month)
+
+    workbook.close()
+
+    with open(workbook.filename, "rb") as f:
+        d = {"document": f}
+        r = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument", files=d, data={"chat_id": chat_id}
+        )
+        logger.warning(r)
+
+
+@app.task(bind=True, name="Статистика")
+def get_main_stat(self, start, end, chat_id):
+    workbook = xlsxwriter.Workbook(f"stat/main/{datetime.now()}_ref_stat.xlsx")
+    worksheet = workbook.add_worksheet()
+
+    worksheet.write("A1", "Номер")
+    worksheet.write("B1", "Telegram никнейм")
+    worksheet.write("C1", "Статус")
+    worksheet.write("D1", "Дата старта бота")
+    worksheet.write("E1", "колличество генераций за период")
+    worksheet.write("F1", "Остаток баланса")
+    worksheet.write("G1", "Сумма покупок за период")
+    worksheet.write("H1", "Колличество реферралов")
+
+    users = User.objects.filter(gen_date__gte=start, gen_date__lte=end).all()
+
+    for i, user in enumerate(users):
+        blend_count = Blend.objects.filter(created_at__gte=start, created_at__lte=end, user=user).count()
+        describe_count = Describe.objects.filter(created_at__gte=start, created_at__lte=end, chat_id=user.chat_id).count()
+        prompt_count = Prompt.objects.filter(created_at__gte=start, created_at__lte=end, telegram_user=user).count()
+
+        pays = Pay.objects.filter(is_verified=True, user=user, created_at__gte=start, created_at__lte=end).all()
+
+        ref_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end, invited_by=user).count()
+
+        pay_sum = 0
+
+        for pay in pays:
+            pay_sum += pay.amount
+
+        worksheet.write(f"A{i + 2}", f"{i}")
+        worksheet.write(f"B{i+2}", f"{user.username}")
+        worksheet.write(f"C{i+2}", f"{user.state}")
+        worksheet.write(f"D{i+2}", f"{user.date_joined}")
+        worksheet.write(f"E{i+2}", f"{blend_count+describe_count+prompt_count}")
+        worksheet.write(f"F{i+2}", f"{user.balance}")
+        worksheet.write(f"G{i+2}", f"{pay_sum}")
+        worksheet.write(f"H{i+2}", f"{ref_count}")
 
     workbook.close()
 
