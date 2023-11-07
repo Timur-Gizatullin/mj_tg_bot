@@ -49,7 +49,7 @@ async def main() -> None:
 
     await bot.delete_my_commands()
     await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
-    RedisMjUserTokenQueue().start()
+    await RedisMjUserTokenQueue().start()
     await dp.start_polling(bot)
 
 

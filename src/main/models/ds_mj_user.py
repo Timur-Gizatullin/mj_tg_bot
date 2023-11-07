@@ -3,6 +3,7 @@ from django.db import models
 
 
 class DsMjUserManager(models.Manager):
+    @sync_to_async()
     def get_senders(self):
         return list(self.filter(is_active=True).all())
 
