@@ -25,7 +25,6 @@ class QueueHandler:
 
         logger.debug(r_queue.llen("queue"))
         r_queue.lrem("queue", 1, chat_id)
-
         try:
             qdata = json.loads(r_queue.lpop(f"{chat_id}"))
             await update_user(qdata, telegram_user)

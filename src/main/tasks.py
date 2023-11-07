@@ -8,6 +8,7 @@ from decouple import config
 from loguru import logger
 
 from main.enums import UserRoleEnum
+from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
 from main.models import BanWord, Referral, User, Blend, Describe, Prompt, Pay
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
@@ -59,6 +60,10 @@ def load_ban_words(self):
         for line in file_lines:
             ban_word = BanWord(word=line, is_active=True)
             ban_word.save()
+
+@app.task(bind=True, name="Обновить дс акаунты")
+def load_ban_words(self):
+    RedisMjUserTokenQueue()
 
 
 @app.task(bind=True, name="Статистика рефералы")
