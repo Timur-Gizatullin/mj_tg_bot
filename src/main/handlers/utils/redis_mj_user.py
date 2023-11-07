@@ -56,16 +56,17 @@ class RedisMjUserTokenQueue:
     async def _update_chosen_sender(self, queue_name, is_fail):
         token = (r_queue.get(queue_name)).decode()
         sender = await DsMjUser.objects.get_sender_by_token(token=token)
-        if is_fail:
-            sender.fail_in_row += 1
-            await sender.asave()
-            if sender.fail_in_row >= 15:
-                sender.is_active = False
+        if sender:
+            if is_fail:
+                sender.fail_in_row += 1
                 await sender.asave()
-                await notify_admins(bot=bot, banned_mj_user=sender)
-                r_queue.getdel(queue_name)
-        else:
-            sender.fail_in_row = 0
+                if sender.fail_in_row >= 15:
+                    sender.is_active = False
+                    await sender.asave()
+                    await notify_admins(bot=bot, banned_mj_user=sender)
+                    r_queue.getdel(queue_name)
+            else:
+                sender.fail_in_row = 0
 
     async def _check_senders_for_availability(self):
         sender = r_queue.get("base_sender")

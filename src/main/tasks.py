@@ -4,7 +4,7 @@ from datetime import date, datetime
 import requests
 import xlsxwriter
 from aiogram import Bot
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync
 from decouple import config
 from loguru import logger
 
@@ -64,8 +64,8 @@ def load_ban_words(self):
 
 
 @app.task(bind=True, name="Обновить дс акаунты")
-def load_ban_words(self):
-    sync_to_async(RedisMjUserTokenQueue().start)()
+def update_ds_accounts(self):
+    async_to_sync(RedisMjUserTokenQueue().start)()
 
 
 @app.task(bind=True, name="Статистика рефералы")

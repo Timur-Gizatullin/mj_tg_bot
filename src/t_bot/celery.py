@@ -69,8 +69,10 @@ def check_subscriptions():
                         await user.asave()
                     except Exception as e:
                         logger.warning(e)
-
-    async_to_sync(task)(users, channels)
+    try:
+        async_to_sync(task)(users, channels)
+    except Exception as e:
+        logger.error(e)
 
 
 @app.task()
@@ -115,7 +117,10 @@ def check_queue():
                     if queue is admin_queue:
                         r_queue.lpop("admin", j_chat_id)
 
-    async_to_sync(task)(base_queue, admin_queue, time, queues)
+    try:
+        async_to_sync(task)(base_queue, admin_queue, time, queues)
+    except Exception as e:
+        logger.error(e)
 
 
 app.config_from_object(settings, namespace="CELERY")
