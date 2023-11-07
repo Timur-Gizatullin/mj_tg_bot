@@ -20,9 +20,9 @@ async def is_has_censor(message: str, censor_list: list[str]) -> bool:
 
     for censor_word in censor_list:
         if message.find(censor_word.lower()) != -1:
-            return True
+            return False
 
-    return False
+    return True
 
 
 translator = Translator(from_lang="ru", to_lang="en")
