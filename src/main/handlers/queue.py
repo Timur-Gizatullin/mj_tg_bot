@@ -13,7 +13,7 @@ from main.models import User
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
 
-r_queue = Redis(host=CONFIG_REDIS_HOST, password=CONFIG_REDIS_PASSWORD)
+r_queue = Redis(host=CONFIG_REDIS_HOST, password=None)
 
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 

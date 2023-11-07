@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -6,6 +5,7 @@ from datetime import datetime, timedelta
 
 from aiogram import Bot
 from aiogram.enums import ChatMemberStatus, ParseMode
+from asgiref.sync import async_to_sync
 from celery import Celery
 from django.conf import settings
 
@@ -70,7 +70,7 @@ def check_subscriptions():
                     except Exception as e:
                         logger.warning(e)
 
-    asyncio.run(task(users, channels))
+    async_to_sync(task)(users, channels)
 
 
 @app.task()
@@ -115,7 +115,7 @@ def check_queue():
                     if queue is admin_queue:
                         r_queue.lpop("admin", j_chat_id)
 
-    asyncio.run(task(base_queue, admin_queue, time, queues))
+    async_to_sync(task)(base_queue, admin_queue, time, queues)
 
 
 app.config_from_object(settings, namespace="CELERY")
