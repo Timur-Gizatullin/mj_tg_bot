@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from asgiref.sync import sync_to_async
 from django.contrib import admin
@@ -61,8 +61,8 @@ class User(AbstractUser):
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
-    gen_date: models.DateTimeField(null=True, verbose_name="Дата последней генерации")
-    pay_date: models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
+    gen_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней генерации", auto_now=True)
+    pay_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
     invited_by = models.ForeignKey("User", related_name="invites", on_delete=models.DO_NOTHING,
                                    verbose_name="Пригласил", null=True, default=None, blank=True)

@@ -24,7 +24,7 @@ class ReferralManager(models.Manager):
     def update_referrer_generations_count(self, referral_key: int) -> None:
         referral = self.filter(key=referral_key).first()
 
-        referral.referrer.generations_count += 6
+        referral.referrer.balance += 6
         referral.used_count += 1
         referral.referrer.save()
 
@@ -53,6 +53,10 @@ class Referral(models.Model):
 
     def __str__(self):
         return f"{self.referrer.telegram_username}[{self.name}]"
+
+    @sync_to_async()
+    def get_referrer(self):
+        return self.referrer
 
     class Meta:
         verbose_name = "Рефферальная ссылка"
