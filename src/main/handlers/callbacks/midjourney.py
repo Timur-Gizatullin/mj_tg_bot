@@ -256,7 +256,6 @@ async def suggestion_callback(callback: types.CallbackQuery):
             prompt = f"{data['img']} {prompt}"
 
         await imagine_trigger(callback.message, prompt, user=user)
-        await callback.answer(cache_time=2000)
 
 
 @mj_router.callback_query(lambda c: c.data.startswith("choose-gpt"))

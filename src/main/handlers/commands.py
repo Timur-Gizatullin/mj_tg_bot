@@ -214,6 +214,8 @@ async def start_handler(message: Message, state: FSMContext) -> None:
         [
             types.KeyboardButton(text="MidJourney"),
             types.KeyboardButton(text="DALL-E"),
+        ],
+        [
             types.KeyboardButton(text="GPT"),
             types.KeyboardButton(text="Оплата"),
         ],

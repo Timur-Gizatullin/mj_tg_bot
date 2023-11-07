@@ -61,6 +61,7 @@ def load_ban_words(self):
             ban_word = BanWord(word=line, is_active=True)
             ban_word.save()
 
+
 @app.task(bind=True, name="Обновить дс акаунты")
 def load_ban_words(self):
     RedisMjUserTokenQueue()
@@ -119,7 +120,9 @@ def get_main_stat(self, start, end, chat_id):
 
     for i, user in enumerate(users):
         blend_count = Blend.objects.filter(created_at__gte=start, created_at__lte=end, user=user).count()
-        describe_count = Describe.objects.filter(created_at__gte=start, created_at__lte=end, chat_id=user.chat_id).count()
+        describe_count = Describe.objects.filter(
+            created_at__gte=start, created_at__lte=end, chat_id=user.chat_id
+        ).count()
         prompt_count = Prompt.objects.filter(created_at__gte=start, created_at__lte=end, telegram_user=user).count()
 
         pays = Pay.objects.filter(is_verified=True, user=user, created_at__gte=start, created_at__lte=end).all()

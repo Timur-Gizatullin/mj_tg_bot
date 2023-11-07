@@ -1,5 +1,6 @@
 from aiogram import Bot
 from aiogram.enums import ParseMode
+from decouple import config
 from loguru import logger
 
 from main.enums import UserRoleEnum
@@ -14,14 +15,14 @@ bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_previe
 class RedisMjUserTokenQueue:
     def __init__(self):
         db_senders: list[DsMjUser] = DsMjUser.objects.get_senders()
-        if len(db_senders) != 0: 
+        if len(db_senders) != 0:
             if len(db_senders) == 1:
                 r_queue.set("sender", db_senders[0].token)
             elif len(db_senders) > 1:
                 r_queue.set("base_sender", db_senders[0].token)
                 r_queue.set("premium_sender", db_senders[1].token)
         else:
-            pass    
+            r_queue.set("sender", config("DISCORD_USER_TOKENS").split(" ")[0])
 
     async def get_sender_token(self, user: User) -> str:
         if r_queue.get("sender"):
@@ -43,7 +44,7 @@ class RedisMjUserTokenQueue:
             else:
                 await self._update_chosen_sender("premium_sender", is_fail)
         else:
-            admins: list[User] = User.objects.get_admins()
+            admins: list[User] = await User.objects.get_admins()
             for admin in admins:
                 await bot.send_message(
                     chat_id=admin.chat_id, text="Миджорни аккаунты закончились, пожалуйста обновите список"
