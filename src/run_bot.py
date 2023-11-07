@@ -7,6 +7,9 @@ import django
 from aiogram.types import BotCommand
 from loguru import logger
 
+from main.enums import UserStateEnum
+from main.models import User
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
@@ -23,10 +26,16 @@ from main.handlers.queue import r_queue  # noqa:E402
 async def clear_queues():
     for i in r_queue.lrange("queue", 0, -1):
         logger.debug("Remove elements form queue")
-        r_queue.lpop("queue")
+        chat_id = (r_queue.lpop("queue")).decode()
+        user = User.objects.filter(chat_id=chat_id, state=UserStateEnum.PENDING).first()
+        user.state = UserStateEnum.READY
+        user.save()
     for i in r_queue.lrange("release", 0, -1):
         logger.debug("Remove elements form release")
-        r_queue.lpop("release")
+        chat_id = (r_queue.lpop("release")).decode()
+        user = User.objects.filter(chat_id=chat_id, state=UserStateEnum.PENDING).first()
+        user.state = UserStateEnum.READY
+        user.save()
 
 
 async def main() -> None:
