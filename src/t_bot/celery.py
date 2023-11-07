@@ -21,7 +21,7 @@ django.setup()
 
 from main.enums import UserRoleEnum, UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
-from main.handlers.utils.interactions import mj_user_token_queue  # noqa:E402
+from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
 from main.models import Channel  # noqa:E402
 from main.models import User  # noqa:E402
 from main.utils import notify_admins  # noqa:E402
@@ -100,7 +100,7 @@ def check_queue():
 
                     await bot.send_message(chat_id=user.chat_id, text=banned_message_answer)
 
-                    await mj_user_token_queue.update_sender(is_fail=True, user=user)
+                    await RedisMjUserTokenQueue().update_sender(is_fail=True, user=user)
 
                     if user.fail_in_row >= 10:
                         try:

@@ -18,6 +18,7 @@ from main.handlers.utils.interactions import (
     blend_trigger,
     mj_user_token_queue,
 )
+from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
     BanWord,
@@ -410,7 +411,7 @@ async def blend_images_handler(message: Message):
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token(user)
+    token = await RedisMjUserTokenQueue().get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
@@ -436,7 +437,7 @@ async def blend_images_handler(message: Message):
 async def based_on_photo_imagine(message: Message, user):
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token(user)
+    token = await RedisMjUserTokenQueue().get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)
@@ -503,7 +504,7 @@ async def describe_handler(message: Message):
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
-    token = await mj_user_token_queue.get_sender_token(user)
+    token = await RedisMjUserTokenQueue().get_sender_token(user)
     header = {"authorization": token, "Content-Type": "application/json"}
 
     attachment = await upload_file(file=file, header=header, chat_id=message.chat.id)

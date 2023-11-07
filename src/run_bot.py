@@ -7,9 +7,12 @@ import django
 from aiogram.types import BotCommand
 from loguru import logger
 
+from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
+from main.enums import UserStateEnum  # noqa:E402
 from main.handlers.callbacks.dalle import dalle_router  # noqa: E402
 from main.handlers.callbacks.gpt import gpt_router  # noqa: E402
 from main.handlers.callbacks.menu import menu_router  # noqa: E402
@@ -18,7 +21,7 @@ from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.callbacks.stats import stat_router  # noqa:E402
 from main.handlers.commands import bot, dp  # noqa: E402
 from main.handlers.queue import r_queue  # noqa:E402
-from main.enums import UserStateEnum  # noqa:E402
+from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
 from main.models import User  # noqa:E402
 
 
@@ -48,7 +51,7 @@ async def main() -> None:
 
     await bot.delete_my_commands()
     await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
-
+    RedisMjUserTokenQueue().start()
     await dp.start_polling(bot)
 
 

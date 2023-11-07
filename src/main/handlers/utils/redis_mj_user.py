@@ -13,7 +13,7 @@ bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_previe
 
 
 class RedisMjUserTokenQueue:
-    def __init__(self):
+    def start(self):
         db_senders: list[DsMjUser] = DsMjUser.objects.get_senders()
         if len(db_senders) != 0:
             if len(db_senders) == 1:
