@@ -7,9 +7,6 @@ import django
 from aiogram.types import BotCommand
 from loguru import logger
 
-from main.enums import UserStateEnum
-from main.models import User
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
@@ -21,6 +18,8 @@ from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.callbacks.stats import stat_router  # noqa:E402
 from main.handlers.commands import bot, dp  # noqa: E402
 from main.handlers.queue import r_queue  # noqa:E402
+from main.enums import UserStateEnum  # noqa:E402
+from main.models import User  # noqa:E402
 
 
 async def clear_queues():
