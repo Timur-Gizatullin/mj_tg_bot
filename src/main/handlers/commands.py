@@ -16,7 +16,6 @@ from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import (
     _trigger_payload,
     blend_trigger,
-    mj_user_token_queue,
 )
 from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources

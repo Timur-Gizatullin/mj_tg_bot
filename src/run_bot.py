@@ -7,8 +7,6 @@ import django
 from aiogram.types import BotCommand
 from loguru import logger
 
-from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
