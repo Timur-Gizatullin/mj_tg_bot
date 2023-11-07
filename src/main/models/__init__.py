@@ -9,7 +9,8 @@ __all__ = [
     "Blend",
     "GptContext",
     "Price",
-    "Channel", "DsMjUser",
+    "Channel",
+    "DsMjUser",
 ]
 
 from main.models.ban_word import BanWord

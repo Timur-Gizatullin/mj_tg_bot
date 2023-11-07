@@ -29,5 +29,4 @@ class DsMjUser(models.Model):
         active = "Активный" if self.is_active else "Не актинвый"
         return f"{self.name} #{self.pk} [{active}]"
 
-
     objects = DsMjUserManager()

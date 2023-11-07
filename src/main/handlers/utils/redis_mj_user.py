@@ -42,7 +42,9 @@ class RedisMjUserTokenQueue:
         else:
             admins: list[User] = User.objects.get_admins()
             for admin in admins:
-                await bot.send_message(chat_id=admin.chat_id, text="Миджорни аккаунты закончились, пожалуйста обновите список")
+                await bot.send_message(
+                    chat_id=admin.chat_id, text="Миджорни аккаунты закончились, пожалуйста обновите список"
+                )
             logger.warning("Обновите список миджорни аккаунтов")
 
         await self._check_senders_for_availability()
@@ -53,7 +55,7 @@ class RedisMjUserTokenQueue:
         if is_fail:
             sender.fail_in_row += 1
             await sender.asave()
-            if sender.fail_in_row >= 3:
+            if sender.fail_in_row >= 15:
                 sender.is_active = False
                 await sender.asave()
                 await notify_admins(bot=bot, banned_mj_user=sender)

@@ -8,7 +8,7 @@ from translate import Translator
 
 from main.enums import UserRoleEnum
 from main.handlers.utils.const import ATTACHMENTS_URL
-from main.models import User, DsMjUser
+from main.models import DsMjUser, User
 
 host = "http://185.209.22.145:8000"
 user_uri = "admin/main/user/{}/change/"

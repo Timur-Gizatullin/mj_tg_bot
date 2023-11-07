@@ -64,8 +64,15 @@ class User(AbstractUser):
     gen_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней генерации", auto_now=True)
     pay_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней оплаты")
     password = models.CharField(blank=True, verbose_name="Пароль")
-    invited_by = models.ForeignKey("User", related_name="invites", on_delete=models.DO_NOTHING,
-                                   verbose_name="Пригласил", null=True, default=None, blank=True)
+    invited_by = models.ForeignKey(
+        "User",
+        related_name="invites",
+        on_delete=models.DO_NOTHING,
+        verbose_name="Пригласил",
+        null=True,
+        default=None,
+        blank=True,
+    )
     fail_in_row: str = models.IntegerField(default=0, verbose_name="Ошибок подряд")
 
     objects = UserManager()

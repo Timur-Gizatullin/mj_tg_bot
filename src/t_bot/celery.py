@@ -21,10 +21,10 @@ django.setup()
 
 from main.enums import UserRoleEnum, UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
+from main.handlers.utils.interactions import mj_user_token_queue  # noqa:E402
 from main.models import Channel  # noqa:E402
 from main.models import User  # noqa:E402
 from main.utils import notify_admins  # noqa:E402
-from main.handlers.utils.interactions import mj_user_token_queue  # noqa:E402
 
 app = Celery("t_bot")
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
@@ -102,7 +102,7 @@ def check_queue():
 
                     await mj_user_token_queue.update_sender(is_fail=True, user=user)
 
-                    if user.fail_in_row >= 1:
+                    if user.fail_in_row >= 10:
                         try:
                             user.state = UserStateEnum.BANNED
                             await user.asave()

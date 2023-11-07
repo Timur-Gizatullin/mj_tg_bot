@@ -39,7 +39,7 @@ async def send_variation_trigger(variation_index: str, queue: Prompt, message, u
     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="variation")
 
 
-async def send_upsample_trigger(upsample_index: str, queue: Prompt, message,user, version: str = ""):
+async def send_upsample_trigger(upsample_index: str, queue: Prompt, message, user, version: str = ""):
     kwargs = {
         "message_flags": 0,
         "message_id": queue.discord_message_id,
@@ -131,6 +131,7 @@ async def imagine_trigger(message, prompt, user):
     header = {"authorization": token}
 
     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="imagine")
+
 
 #
 # async def describe_reset_trigger(message_id: str, message):

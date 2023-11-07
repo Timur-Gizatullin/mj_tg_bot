@@ -87,7 +87,9 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     if not await is_can_use(telegram_user, callback, cost):
         return
 
-    await send_upsample_trigger(upsample_index="1", queue=queue, version=action, message=callback.message, user=telegram_user)
+    await send_upsample_trigger(
+        upsample_index="1", queue=queue, version=action, message=callback.message, user=telegram_user
+    )
 
     await callback.answer()
 
@@ -163,7 +165,10 @@ async def callback_reset(callback: types.CallbackQuery):
         return
 
     await send_reset_trigger(
-        message_id=queue.discord_message_id, message_hash=queue.message_hash, message=callback.message, user=telegram_user
+        message_id=queue.discord_message_id,
+        message_hash=queue.message_hash,
+        message=callback.message,
+        user=telegram_user,
     )
 
     await callback.answer()

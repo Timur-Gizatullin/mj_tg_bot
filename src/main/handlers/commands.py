@@ -182,7 +182,9 @@ async def deep_start(message: Message, command: CommandObject, state: FSMContext
 
     await Referral.objects.update_referrer_generations_count(referral_key=key)
 
-    existing_user = User(telegram_username=message.from_user.username, chat_id=message.chat.id, invited_by=await referral.get_referrer())
+    existing_user = User(
+        telegram_username=message.from_user.username, chat_id=message.chat.id, invited_by=await referral.get_referrer()
+    )
     await existing_user.asave()
 
     await start_handler(message, state)
