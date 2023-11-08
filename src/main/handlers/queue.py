@@ -21,9 +21,10 @@ bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_previe
 class QueueHandler:
     @staticmethod
     async def exclude_queue(chat_id, telegram_user):
-        await admin_mj_exclude(telegram_user)
-
-        await base_exclude(chat_id, telegram_user)
+        if telegram_user.role == UserRoleEnum.ADMIN:
+            await admin_mj_exclude(telegram_user, chat_id)
+        else:
+            await base_exclude(chat_id, telegram_user)
 
     @staticmethod
     async def include_queue(payload, header, message, action):
@@ -157,7 +158,7 @@ async def update_user(qdata, telegram_user: User):
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
         logger.debug(telegram_user.state)
-    elif qdata["action"] in ("upscale_2x", "upscale_4x"):
+    elif qdata["action"] in ("upscale__v5_2x", "upscale__v5_4x"):
         if qdata["action"].split("_")[-1] == "2x":
             cost = 4
         else:
