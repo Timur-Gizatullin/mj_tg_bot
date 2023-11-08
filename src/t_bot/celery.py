@@ -80,7 +80,7 @@ def check_queue():
     base_queue = r_queue.lrange("queue", 0, -1)
     admin_queue = r_queue.lrange("admin", 0, -1)
     queues = (base_queue, admin_queue)
-    time = len(base_queue) * 30 + 120
+    time = len(base_queue) * 30 + 190
     logger.info(f"BASE QUEUE LEN: {len(base_queue)}")
     logger.info(f"ADMIN QUEUE LEN: {len(admin_queue)}")
 
@@ -118,7 +118,7 @@ def check_queue():
                         r_queue.lpop("admin", j_chat_id)
 
     try:
-        async_to_sync(task)(base_queue, admin_queue, time, queues)
+        async_to_sync(task, force_new_loop=True)(base_queue, admin_queue, time, queues)
     except Exception as e:
         logger.error(e)
 

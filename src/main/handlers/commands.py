@@ -494,11 +494,17 @@ async def describe_handler(message: Message):
         await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
         return
     if user.balance - 2 < 0:
+        reply = """Ваш баланс {}.
+        
+💰 Вам доступно только  5 бесплатных токенов ежедневно. 
+
+🌇Пополни свой счёт и получи быстрые генерации без очереди! 🎆
+
+💤 Или возвращайтесь завтра!"""
         builder = InlineKeyboardBuilder()
-        answer = f"Ваш баланс {user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
-        await message.answer(answer, reply_markup=builder.as_markup())
+        await message.answer(reply.format(user.balance), reply_markup=builder.as_markup())
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)

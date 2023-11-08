@@ -55,12 +55,18 @@ TRANSLATOR_GPT_OPTION = (
 
 
 async def is_enough_balance(telegram_user, callback, amount):
+    reply = """Ваш баланс {}.
+
+💰 Вам доступно только  5 бесплатных токенов ежедневно. 
+
+🌇Пополни свой счёт и получи быстрые генерации без очереди! 🎆
+
+💤 Или возвращайтесь завтра!"""
     if telegram_user.balance - amount < 0:
         builder = InlineKeyboardBuilder()
-        answer = f"Ваш баланс {telegram_user.balance}\n"
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
-        await callback.message.answer(answer, reply_markup=builder.as_markup())
+        await callback.message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
         await callback.answer()
         return False
 
