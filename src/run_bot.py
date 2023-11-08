@@ -30,6 +30,9 @@ async def clear_queues():
     for i in r_queue.lrange("release", 0, -1):
         logger.debug("Remove elements form release")
         r_queue.lpop("release")
+    for i in r_queue.lrange("admin", 0, -1):
+        logger.debug("Remove elements form admin")
+        r_queue.lpop("admin")
 
     users = await User.objects.get_pending_users()
     for user in users:
