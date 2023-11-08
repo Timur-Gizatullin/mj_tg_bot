@@ -11,6 +11,7 @@ class AnswerTypeEnum(BaseStrEnum):
     START = "START"
     HELP = "HELP"
     CENSOR = "CENSOR"
+    GPT_OPTION = "GPT_OPTION"
 
 
 class UserRoleEnum(BaseStrEnum):

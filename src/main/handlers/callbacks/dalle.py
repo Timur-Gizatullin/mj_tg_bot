@@ -55,7 +55,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                 return
 
             messages = [
-                {"role": "system", "content": GPT_OPTION},
+                {"role": "system", "content": await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_OPTION)},
                 {"role": "user", "content": prompt},
             ]
             answer = await callback.message.answer(f"GPT думает ... ⌛\n")

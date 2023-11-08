@@ -6,8 +6,9 @@ from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import UserRoleEnum, UserStateEnum
+from main.enums import UserRoleEnum, UserStateEnum, AnswerTypeEnum
 from main.handlers.commands import gpt
+from main.models import TelegramAnswer
 from main.utils import callback_data_util
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -117,7 +118,7 @@ async def gpt_translate(message):
 
 async def get_gpt_prompt_suggestions(prompt, callback, user, data):
     messages = [
-        {"role": "system", "content": GPT_OPTION},
+        {"role": "system", "content": await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_OPTION)},
         {"role": "user", "content": prompt},
     ]
     try:
