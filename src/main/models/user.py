@@ -65,6 +65,7 @@ class User(AbstractUser):
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
+    pending_state_at = models.DateTimeField(blank=True, null=True, verbose_name="Ожидает с")
     gen_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней генерации", auto_now=True, blank=True)
     pay_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней оплаты", blank=True)
     password = models.CharField(blank=True, verbose_name="Пароль")

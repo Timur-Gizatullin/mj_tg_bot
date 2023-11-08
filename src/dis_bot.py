@@ -142,6 +142,9 @@ class DiscordMiddleWare(discord.Client):
 
         try:
             await bot.send_photo(chat_id=chat_id, photo=document)
+        except Exception as e:
+            logger.error(e)
+        try:
             await bot.send_document(
                 chat_id=chat_id,
                 document=document,

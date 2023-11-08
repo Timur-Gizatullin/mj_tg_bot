@@ -32,10 +32,11 @@ class QueueHandler:
 
         user: User = await User.objects.get_user_by_chat_id(message.chat.id)
         user.state = UserStateEnum.PENDING
+        user.pending_state_at = datetime.now()
         await user.asave()
 
         if user.role == UserRoleEnum.ADMIN:
-            await admin_mj_release(payload, header, message)
+            await admin_mj_release(payload, header, message, action)
         else:
             if r_queue.llen("queue") >= 3:
                 data = json.dumps(
@@ -54,10 +55,11 @@ class QueueHandler:
                 await base_release(payload, header, action, message, user)
 
 
-async def admin_mj_release(payload, header, message):
+async def admin_mj_release(payload, header, message, action):
     data = json.dumps(
         {
             "chat_id": message.chat.id,
+            "action": action,
             "start": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
     )
