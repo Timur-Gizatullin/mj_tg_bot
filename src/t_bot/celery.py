@@ -92,6 +92,8 @@ def check_queue():
                 j_chat_id = json.loads(chat_id)
                 queue_data = r_queue.lrange(j_chat_id, 0, -1)
                 logger.info(f"QUEUE DATA {queue_data}")
+                if len(queue_data) == 0:
+                    break
                 queue_data = json.loads(queue_data[-1])
                 start = queue_data["start"]
                 diff = datetime.now() - datetime.strptime(start, "%Y-%m-%d %H:%M:%S")

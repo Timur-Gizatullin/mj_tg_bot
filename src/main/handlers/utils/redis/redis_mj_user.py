@@ -67,6 +67,7 @@ class RedisMjUserTokenQueue:
                     r_queue.getdel(queue_name)
             else:
                 sender.fail_in_row = 0
+                await sender.asave()
 
     async def _check_senders_for_availability(self):
         sender = r_queue.get("base_sender")

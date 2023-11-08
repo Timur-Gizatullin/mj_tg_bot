@@ -13,10 +13,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
 from main.handlers.commands import bot  # noqa: E402
-from main.handlers.queue import QueueHandler
-from main.keyboards.commands import resources
+from main.handlers.queue import QueueHandler  # noqa: E402
+from main.keyboards.commands import resources  # noqa: E402
 from main.keyboards.interactions import get_keyboard  # noqa: E402
 from main.models import Blend, Describe, Prompt, User  # noqa: E402
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue  # noqa: E402
 
 preview_handler = {}
 
@@ -67,6 +68,8 @@ class DiscordMiddleWare(discord.Client):
                 parse_mode=ParseMode.MARKDOWN,
             )
             await QueueHandler.exclude_queue(describe_object.chat_id, telegram_user=user)
+            await RedisMjUserTokenQueue().update_sender(is_fail=False, user=user)
+
 
     async def on_message(self, message: Message):
         if message.author == self.user:
@@ -169,6 +172,7 @@ class DiscordMiddleWare(discord.Client):
             text=f"Баланс в токенах: {telegram_user.balance}\n\n*Примеры генераций:* \n{resources}",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
+        await RedisMjUserTokenQueue().update_sender(is_fail=False, user=telegram_user)
 
 
 if __name__ == "__main__":
