@@ -58,7 +58,6 @@ class DiscordMiddleWare(discord.Client):
             describe_object: Describe = await Describe.objects.get_describe_by_file_name(file_name)
             logger.debug("Send edited message to telegram")
             user = await User.objects.get_user_by_chat_id(describe_object.chat_id)
-            await QueueHandler.exclude_queue(describe_object.chat_id, telegram_user=user)
 
             await bot.send_photo(
                 chat_id=describe_object.chat_id,
@@ -67,6 +66,7 @@ class DiscordMiddleWare(discord.Client):
                 reply_markup=keyboard,
                 parse_mode=ParseMode.MARKDOWN,
             )
+            await QueueHandler.exclude_queue(describe_object.chat_id, telegram_user=user)
 
     async def on_message(self, message: Message):
         if message.author == self.user:
@@ -151,7 +151,6 @@ class DiscordMiddleWare(discord.Client):
             )
         except Exception as e:
             logger.error(e)
-            await QueueHandler.exclude_queue(chat_id, telegram_user=telegram_user)
 
         preview = preview_handler.pop(f"{chat_id}{prompt}", None)
         logger.debug(preview)

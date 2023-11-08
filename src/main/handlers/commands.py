@@ -17,7 +17,7 @@ from main.handlers.utils.interactions import (
     _trigger_payload,
     blend_trigger,
 )
-from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
     BanWord,

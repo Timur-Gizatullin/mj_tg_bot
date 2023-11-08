@@ -19,7 +19,7 @@ from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.callbacks.stats import stat_router  # noqa:E402
 from main.handlers.commands import bot, dp  # noqa: E402
 from main.handlers.queue import r_queue  # noqa:E402
-from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
 from main.models import User  # noqa:E402
 
 

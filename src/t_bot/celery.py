@@ -21,7 +21,7 @@ django.setup()
 
 from main.enums import UserRoleEnum, UserStateEnum  # noqa:E402
 from main.handlers.queue import r_queue  # noqa:E402
-from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
 from main.models import Channel  # noqa:E402
 from main.models import User  # noqa:E402
 from main.utils import notify_admins  # noqa:E402
@@ -70,7 +70,7 @@ def check_subscriptions():
                     except Exception as e:
                         logger.warning(e)
     try:
-        async_to_sync(task)(users, channels)
+        async_to_sync(task, force_new_loop=True)(users, channels)
     except Exception as e:
         logger.error(e)
 
@@ -86,9 +86,12 @@ def check_queue():
 
     async def task(base_queue, admin_queue, time, queues):
         for queue in queues:
+            log = "HANDLE BASE QUEUE" if queue is base_queue else "HANDLE ADMIN QUEUE"
+            logger.info(log)
             for chat_id in queue:
                 j_chat_id = json.loads(chat_id)
                 queue_data = r_queue.lrange(j_chat_id, 0, -1)
+                logger.info(f"QUEUE DATA {queue_data}")
                 queue_data = json.loads(queue_data[-1])
                 start = queue_data["start"]
                 diff = datetime.now() - datetime.strptime(start, "%Y-%m-%d %H:%M:%S")

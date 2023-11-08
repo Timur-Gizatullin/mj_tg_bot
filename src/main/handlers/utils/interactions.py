@@ -3,7 +3,7 @@ from typing import Any
 from loguru import logger
 
 from main.handlers.queue import QueueHandler
-from main.handlers.utils.redis_mj_user import RedisMjUserTokenQueue
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
 from main.models import Blend, Prompt
 from t_bot.settings import CHANNEL_ID, GUILD_ID
 
