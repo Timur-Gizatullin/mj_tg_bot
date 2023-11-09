@@ -10,7 +10,7 @@ from aiogram_media_group import media_group_handler
 from decouple import config
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, ProductEnum, UserRoleEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, ProductEnum, UserRoleEnum, UserStateEnum, PriceEnum
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import (
@@ -28,7 +28,7 @@ from main.models import (
     Price,
     Referral,
     TelegramAnswer,
-    User,
+    User, OptionPrice,
 )
 from main.utils import (
     MenuState,
@@ -133,15 +133,8 @@ async def pay_command(message: Message, state: FSMContext):
     user = await is_user_exist(str(message.chat.id))
     answer = (
         f"Ваш баланс в токенах: {user.balance}\n"
-        "Одна генерация Midjourney = 2\n"
-        "Отдельно тарифицируются генерации Upscale:\n"
-        "Увеличение базового изображения, зум, изменение масштаьа и тд = 2\n"
-        "Upscale 2x = 4\n"
-        "Upscale 4x = 8\n"
-        "Одна генерация DALL-E = 2\n"
-        "Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
-        "При оплате в USDT - 1 usdt = 100р"
-    )
+        f"{TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.PRICES)}"
+            )
 
     prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)
     options_button = []
@@ -344,8 +337,9 @@ async def gpt_handler(message: types.Message):
         await GptContext.objects.delete_gpt_contexts(gpt_contexts)
         await message.answer("Контекст очищен")
 
-    user.balance -= 1
-    if user.balance <= 5:
+    option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+    user.balance -= option_price.price
+    if user.balance <= 5 and user.role != UserRoleEnum.ADMIN:
         user.role = UserRoleEnum.BASE
     await user.asave()
     await message.answer(text=f"Баланс в токенах {user.balance}")
@@ -354,10 +348,7 @@ async def gpt_handler(message: types.Message):
 @dp.message(MenuState.dalle)
 async def dale_handler(message: Message):
     user = await is_user_exist(chat_id=str(message.chat.id))
-    suggestion = (
-        "🌆Хотите обработать Ваш запрос с помощью CHAT GPT 4, для создания трех вариантов профессиональных промптов?\n"
-        "(Стоимость 1 токен)"
-    )
+    suggestion = await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_PRICE)
     callback_data_util[f"{message.chat.id}-{message.message_id}"] = message.text
     builder = InlineKeyboardBuilder()
     prompt_buttons = (
@@ -381,10 +372,7 @@ async def handle_imagine(message, img_url: str | None = None):
         await message.answer("⛔️Промт должен содержать только одну строку⛔️")
         return
 
-    suggestion = (
-        "🌆Хочешь обработать запрос с помощью CHAT GPT, для создания трех вариантов профессиональных промптов?\n"
-        "(Стоимость 1 токен)"
-    )
+    suggestion = await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_PRICE)
     text = message.caption if img_url else message.text
     callback_data_util[f"{message.chat.id}-{message.message_id}"] = {"text": text, "img": img_url}
     builder = InlineKeyboardBuilder()

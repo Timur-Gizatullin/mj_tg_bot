@@ -13,6 +13,7 @@ from main.models import (
     Referral,
     TelegramAnswer,
     User,
+    OptionPrice
 )
 from main.models.user import UserAudit
 
@@ -28,3 +29,4 @@ admin.site.register(GptContext)
 admin.site.register(Price)
 admin.site.register(Channel)
 admin.site.register(DsMjUser)
+admin.site.register(OptionPrice)

@@ -6,7 +6,7 @@ from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum, PriceEnum
 from main.handlers.commands import bot, gpt
 from main.handlers.helpers import (
     GPT_OPTION,
@@ -16,7 +16,7 @@ from main.handlers.helpers import (
     is_ready,
 )
 from main.keyboards.commands import resources
-from main.models import BanWord, TelegramAnswer, User
+from main.models import BanWord, TelegramAnswer, User, OptionPrice
 from main.utils import callback_data_util, is_has_censor
 
 dalle_router = Router()
@@ -68,8 +68,10 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             ]
             builder.row(*buttons)
 
-            user.balance -= 1
-            if user.balance < 5:
+            option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+            logger.debug(option_price)
+            user.balance -= option_price.price
+            if user.balance < 5 and user.role != UserRoleEnum.ADMIN:
                 user.role = UserRoleEnum.BASE
             user.state = UserStateEnum.READY
             await user.asave()
@@ -91,8 +93,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                     chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
                 )
 
-            user.balance -= 2
-            if user.balance < 5:
+            option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
+            user.balance -= option_price.price
+            if user.balance < 5 and user.role != UserRoleEnum.ADMIN:
                 user.role = UserRoleEnum.BASE
             user.state = UserStateEnum.READY
             await user.asave()
@@ -138,8 +141,9 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
                 chat_id=callback.message.chat.id, photo=img, caption=f"`{prompt}`", parse_mode=ParseMode.MARKDOWN
             )
 
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5:
+        option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
+        telegram_user.balance -= option_price.price
+        if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
             telegram_user.role = UserRoleEnum.BASE
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()

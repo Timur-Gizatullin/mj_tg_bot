@@ -114,9 +114,11 @@ class UserFilter(admin.SimpleListFilter):
 def make_ready(modeladmin, request, queryset):
     queryset.update(state=UserStateEnum.READY)
 
+
 @admin.action(description="Прировнять отрицательный баланс к 5")
 def make_balance_five(modeladmin, request, queryset):
     queryset.filter(balance__lt=5).update(balance=5)
+
 
 class UserAudit(admin.ModelAdmin):
     list_filter = ("role", "state")

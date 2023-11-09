@@ -6,9 +6,9 @@ from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import UserRoleEnum, UserStateEnum, AnswerTypeEnum
+from main.enums import UserRoleEnum, UserStateEnum, AnswerTypeEnum, PriceEnum
 from main.handlers.commands import gpt
-from main.models import TelegramAnswer
+from main.models import TelegramAnswer, OptionPrice
 from main.utils import callback_data_util
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
@@ -144,8 +144,9 @@ async def get_gpt_prompt_suggestions(prompt, callback, user, data):
             text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup()
         )
 
-        user.balance -= 1
-        if user.balance < 5:
+        option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+        user.balance -= option_price.price
+        if user.balance < 5 and user.role != UserRoleEnum.ADMIN:
             user.role = UserRoleEnum.BASE
         user.state = UserStateEnum.READY
         await user.asave()

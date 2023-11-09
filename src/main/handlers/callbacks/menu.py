@@ -8,8 +8,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_START_HOST
-from main.enums import ProductEnum
-from main.models import Referral, User
+from main.enums import ProductEnum, AnswerTypeEnum
+from main.models import Referral, User, TelegramAnswer
 from main.models.prices import Price
 from main.utils import MenuState
 
@@ -100,14 +100,7 @@ async def lk_callback(callback: types.CallbackQuery):
     if action == "options":
         answer = (
             f"Ваш баланс в токенах: {current_user.balance}\n"
-            "Одна генерация Midjourney = 2\n"
-            "Отдельно тарифицируются генерации Upscale:\n"
-            "Увеличение базового изображения, зум, изменение масштаьа и тд = 2\n"
-            "Upscale 2x = 4\n"
-            "Upscale 4x = 8\n"
-            "Одна генерация DALL-E = 2\n"
-            "Один запрос Chat GPT в т.ч. По формированию промпта = 1\n"
-            "При оплате в USDT - 1 usdt = 100р"
+            f"{await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.PRICES)}"
         )
 
         prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)

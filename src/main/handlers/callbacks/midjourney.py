@@ -32,14 +32,6 @@ from main.models import BanWord, Prompt, TelegramAnswer, User  # noqa: E402
 
 mj_router = Router()
 
-confirm_upscale_message = (
-    "Upscale -  увеличивает размер изображения, добавляя мельчайшие детали, в 2 (2048х2048) "
-    "и 4 раза (4096х4096), файлы 4х  могут не открываться на смартфоне, используйте компьютер.\n"
-    "Стоимость:\n"
-    "Upscale 2x = 4 токена\n"
-    "Upscale 4x = 8 токенов\n\n"
-    "Сгенерировать?"
-)
 help_message = (
     "🪄Vary Strong - вносит больше изменений в создаваемые вариации, увеличивает урвоень художественности и "
     "воображемых элементов\n\n"
@@ -103,7 +95,7 @@ async def callbacks_confirm_upsamples_v5(callback: types.CallbackQuery):
     )
     await bot.send_document(
         chat_id=callback.message.chat.id,
-        caption=confirm_upscale_message,
+        caption=TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.UPSCALE_CONFIRM),
         reply_markup=builder.as_markup(),
         document=callback.message.document.file_id,
     )

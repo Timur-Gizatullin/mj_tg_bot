@@ -7,9 +7,9 @@ from aiogram.enums import ParseMode
 from loguru import logger
 from redis import Redis
 
-from main.enums import UserRoleEnum, UserStateEnum
+from main.enums import UserRoleEnum, UserStateEnum, PriceEnum
 from main.handlers.utils.const import INTERACTION_URL
-from main.models import User
+from main.models import User, Price, OptionPrice
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -132,41 +132,18 @@ async def base_exclude(chat_id, telegram_user):
     except Exception as e:
         logger.error(e)
 
+
 async def update_user(qdata, telegram_user: User):
     telegram_user.fail_in_row = 0
     logger.debug(qdata["action"])
-    if qdata["action"] in (
-        "imagine",
-        "describe",
-        "vary",
-        "zoom",
-        "pan",
-        "describe_retry",
-    ):
-        telegram_user.balance -= 2
-        if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
-            telegram_user.role = UserRoleEnum.BASE
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        logger.debug(telegram_user.state)
-    elif qdata["action"] in (
-        "upsample",
-        "variation",
-        "reroll",
-    ):
-        telegram_user.balance -= 1
-        if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
-            telegram_user.role = UserRoleEnum.BASE
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        logger.debug(telegram_user.state)
-    elif qdata["action"] in ("upscale__v5_2x", "upscale__v5_4x"):
-        if qdata["action"].split("_")[-1] == "2x":
-            cost = 4
-        else:
-            cost = 8
-        telegram_user.balance -= cost
-        if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
-            telegram_user.role = UserRoleEnum.BASE
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
+    action = PriceEnum(qdata["action"])
+    logger.debug(f"CHECK IN ACTION {action}")
+    option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(action)
+
+    telegram_user.balance -= option_price.price
+
+    if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
+        telegram_user.role = UserRoleEnum.BASE
+    telegram_user.state = UserStateEnum.READY
+    await telegram_user.asave()
+    logger.debug(telegram_user.state)

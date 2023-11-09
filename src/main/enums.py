@@ -12,6 +12,9 @@ class AnswerTypeEnum(BaseStrEnum):
     HELP = "HELP"
     CENSOR = "CENSOR"
     GPT_OPTION = "GPT_OPTION"
+    PRICES = "PRICES"
+    UPSCALE_CONFIRM = "UPSCALE_CONFIRM"
+    GPT_PRICE = "GPT_PRICE"
 
 
 class UserRoleEnum(BaseStrEnum):
@@ -38,3 +41,19 @@ class CurrencyEnum(BaseStrEnum):
 
 class ProductEnum(BaseStrEnum):
     TOKEN = "TOKEN"
+
+
+class PriceEnum(BaseStrEnum):
+    imagine = "imagine"
+    describe = "describe"
+    vary = "vary"
+    zoom = "zoom"
+    pan = "pan"
+    describe_retry = "describe_retry"
+    upsample = "upsample"
+    variation = "variation"
+    reroll = "reroll"
+    upscale__v5_2x = "upscale__v5_2x"
+    upscale__v5_4x = "upscale__v5_4x"
+    dalle = "dalle"
+    gpt = "gpt"
