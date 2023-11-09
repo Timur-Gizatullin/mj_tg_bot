@@ -8,9 +8,9 @@ from asgiref.sync import async_to_sync
 from decouple import config
 from loguru import logger
 
-from main.enums import UserRoleEnum
+from main.enums import UserRoleEnum, MerchantEnum
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
-from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User
+from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User, Channel
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -72,7 +72,7 @@ def update_ds_accounts(self):
 def get_ref_stat(self, chat_id):
     refs: list[Referral] = Referral.objects.exclude(name=None)
 
-    workbook = xlsxwriter.Workbook(f"stat/ref/{datetime.now()}_ref_stat.xlsx")
+    workbook = xlsxwriter.Workbook(f"ref_stat.xlsx")
     worksheet = workbook.add_worksheet()
 
     worksheet.write("A1", "Реферальная ссылка")
@@ -84,7 +84,7 @@ def get_ref_stat(self, chat_id):
     for i, ref in enumerate(refs):
         total = User.objects.filter(invited_by=ref.referrer).count()
         alive = User.objects.exclude(is_active=False).filter(invited_by=ref.referrer).count()
-        per_day = User.objects.filter(date_joined__gte=date.today()).count()
+        per_day = User.objects.filter(date_joined__gte=date.today()).filter(invited_by=ref.referrer).count()
         per_month = User.objects.filter(invited_by=ref.referrer).filter(date_joined__month=date.today().month).count()
 
         worksheet.write(f"A{i + 2}", ref.name)
@@ -105,7 +105,7 @@ def get_ref_stat(self, chat_id):
 
 @app.task(bind=True, name="Статистика")
 def get_main_stat(self, start, end, chat_id):
-    workbook = xlsxwriter.Workbook(f"stat/main/{datetime.now()}_ref_stat.xlsx")
+    workbook = xlsxwriter.Workbook(f"ref_stat.xlsx")
     worksheet = workbook.add_worksheet()
 
     worksheet.write("A1", "Номер")
@@ -133,10 +133,13 @@ def get_main_stat(self, start, end, chat_id):
         pay_sum = 0
 
         for pay in pays:
-            pay_sum += pay.amount
+            if pay.merchant == MerchantEnum.YOOKASSA:
+                pay_sum += pay.amount
+            else:
+                pay_sum += pay.amount*100
 
         worksheet.write(f"A{i + 2}", f"{i}")
-        worksheet.write(f"B{i+2}", f"{user.username}")
+        worksheet.write(f"B{i+2}", f"{user.telegram_username}")
         worksheet.write(f"C{i+2}", f"{user.state}")
         worksheet.write(f"D{i+2}", f"{user.date_joined}")
         worksheet.write(f"E{i+2}", f"{blend_count+describe_count+prompt_count}")
