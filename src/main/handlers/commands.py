@@ -1,3 +1,5 @@
+import datetime
+
 import openai
 import requests
 from aiogram import Bot, Dispatcher, F, types
@@ -14,11 +16,10 @@ from main.constants import BOT_START_HOST
 from main.enums import (
     AnswerTypeEnum,
     PriceEnum,
-    ProductEnum,
     UserRoleEnum,
     UserStateEnum,
 )
-from main.handlers.helpers import check_subs, is_enough_balance
+from main.handlers.helpers import is_enough_balance
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import _trigger_payload, blend_trigger
@@ -31,7 +32,6 @@ from main.models import (
     GptContext,
     OptionPrice,
     Pay,
-    Price,
     Referral,
     TelegramAnswer,
     User,
@@ -290,6 +290,7 @@ async def gpt_handler(message: types.Message):
         return
 
     user.state = UserStateEnum.PENDING
+    user.pending_state_at = datetime.datetime.now()
     await user.asave()
 
     ban_words = await BanWord.objects.get_active_ban_words()
@@ -387,6 +388,7 @@ async def blend_images_handler(message: Message):
     if not user:
         await message.answer("Напишите боту /start")
         user.state = UserStateEnum.PENDING
+        user.pending_state_at = datetime.datetime.now()
         await user.asave()
         return
 

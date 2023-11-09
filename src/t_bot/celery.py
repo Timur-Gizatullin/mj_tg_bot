@@ -124,6 +124,8 @@ def check_queue():
                     if queue is admin_queue:
                         r_queue.lpop("admin", j_chat_id)
 
+        await User.objects.check_stack_pending_users()
+
     try:
         asyncio.get_event_loop().run_until_complete(task(base_queue, admin_queue, time, queues))
         # async_to_sync(task, force_new_loop=True)(base_queue, admin_queue, time, queues)

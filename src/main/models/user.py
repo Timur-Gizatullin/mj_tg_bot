@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from asgiref.sync import sync_to_async
 from django.contrib import admin
@@ -11,6 +11,19 @@ from main.enums import UserRoleEnum, UserStateEnum
 
 
 class UserManager(AbstractUserManager):
+    @sync_to_async()
+    def check_stack_pending_users(self) -> list["User"]:
+        pending_users: list[User] = list(self.filter(state=UserStateEnum.PENDING).all())
+        cleared_users = []
+        for pending_user in pending_users:
+            if pending_user.pending_state_at:
+                diff = datetime.now() - pending_user.pending_state_at
+                if diff >= timedelta(15*60):
+                    pending_user.pending_state_at = None
+                    pending_user.state = UserStateEnum.READY
+                    cleared_users.append(pending_user)
+
+        return cleared_users
 
     @sync_to_async()
     def get_today_inactive_user(self):
@@ -78,7 +91,7 @@ class User(AbstractUser):
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
-    pending_state_at = models.DateTimeField(blank=True, null=True, verbose_name="Ожидает с")
+    pending_state_at: datetime = models.DateTimeField(blank=True, null=True, verbose_name="Ожидает с")
     gen_date: datetime = models.DateTimeField(
         null=True, verbose_name="Дата последней генерации", auto_now=True, blank=True
     )

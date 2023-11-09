@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import django
@@ -229,6 +230,7 @@ async def suggestion_callback(callback: types.CallbackQuery):
         return
 
     user.state = UserStateEnum.PENDING
+    user.state = datetime.datetime.now()
     await user.asave()
 
     prompt = await gpt_translate(message)

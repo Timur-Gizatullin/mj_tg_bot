@@ -1,3 +1,5 @@
+import datetime
+
 import openai
 import requests
 from aiogram import Router, types
@@ -30,6 +32,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
     if not await is_ready(user, callback):
         return
     user.state = UserStateEnum.PENDING
+    user.pending_state_at = datetime.datetime.now()
     await user.asave()
 
     prompt = await gpt_translate(message)
@@ -121,6 +124,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     if not await is_can_use(telegram_user, callback, option_price.price):
         return
     telegram_user.state = UserStateEnum.PENDING
+    telegram_user.pending_state_at = datetime.datetime.now()
     await telegram_user.asave()
 
     try:
