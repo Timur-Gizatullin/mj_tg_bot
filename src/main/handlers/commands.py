@@ -10,6 +10,7 @@ from aiogram_media_group import media_group_handler
 from decouple import config
 from loguru import logger
 
+from main.constants import BOT_START_HOST
 from main.enums import (
     AnswerTypeEnum,
     PriceEnum,
@@ -132,32 +133,18 @@ async def mj_command(message: Message, state: FSMContext):
     await state.set_state(MenuState.mj)
 
 
-@dp.message(F.text.lower() == "оплата")
-async def pay_command(message: Message, state: FSMContext):
-    user = await is_user_exist(str(message.chat.id))
-    answer = (
-        f"Ваш баланс в токенах: {user.balance}\n"
-        f"{await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.PRICES)}"
-    )
-
-    prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)
-    options_button = []
-    for price in prices:
-        button = types.InlineKeyboardButton(
-            text=f"{price.quantity} {price.description} = {price.amount} руб",
-            callback_data=f"pay-options_{price.quantity}_{price.amount}",
-        )
-        options_button.append(button)
+@dp.message(F.text.lower() == "личный кабинет")
+async def lk_command(message: Message, state: FSMContext):
+    current_user: User = await User.objects.get_user_by_chat_id(message.chat.id)
+    referral: Referral = await Referral.objects.get_referral_by_user(user=current_user)
+    if not referral:
+        referral = await Referral.objects.create_referral(current_user)
 
     builder = InlineKeyboardBuilder()
-    j = 0
-    for i in range(len(options_button) // 2):
-        builder.row(options_button[j], options_button[j + 1])
-        j += 2
-    if range(len(options_button) % 2 != 0):
-        builder.row(options_button[-1])
-
-    await message.answer(answer, reply_markup=builder.as_markup())
+    answer = f"Ваш баланс {current_user.balance}\n" f"Ваша реферальная ссылка: {BOT_START_HOST}{referral.key}"
+    lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+    builder.row(*lk_buttons)
+    await message.answer(answer, reply_markup=builder.as_markup(), parse_mode=ParseMode.HTML)
 
 
 @dp.message(CommandStart(deep_link=True))
@@ -214,7 +201,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
         ],
         [
             types.KeyboardButton(text="GPT"),
-            types.KeyboardButton(text="Оплата"),
+            types.KeyboardButton(text="Личный кабинет"),
         ],
     ]
     keyboard = types.ReplyKeyboardMarkup(

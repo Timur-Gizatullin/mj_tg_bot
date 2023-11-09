@@ -18,15 +18,10 @@ async def callback_pay(callback: types.CallbackQuery):
     if action == "user":
         user_count: int = await User.objects.get_users_count()
         today_user_count: int = await User.objects.get_users_today_count()
+        reply = (f"")
+
         await callback.message.answer(
             f"Количество пользователей: {user_count}\n" f"Количество пользователей за сегодня: {today_user_count}\n",
-        )
-
-    if action == "ref":
-        ref_count: int = await User.objects.get_referrals_count()
-        today_ref_count: int = await User.objects.get_referrals_today_count()
-        await callback.message.answer(
-            f"Количество всех рефералов: {ref_count}\n" f"Количество рефералов за сегодня: {today_ref_count}\n",
         )
 
     await callback.answer()
