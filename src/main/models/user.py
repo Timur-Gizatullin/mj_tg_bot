@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from asgiref.sync import sync_to_async
 from django.contrib import admin
@@ -6,6 +6,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import UserManager as AbstractUserManager
 from django.db import models
 from django.db.models import QuerySet
+from loguru import logger
 
 from main.enums import UserRoleEnum, UserStateEnum
 
@@ -17,11 +18,13 @@ class UserManager(AbstractUserManager):
         cleared_users = []
         for pending_user in pending_users:
             if pending_user.pending_state_at:
-                diff = datetime.now() - pending_user.pending_state_at
-                if diff >= timedelta(15*60):
+                diff = datetime.now(timezone.utc) - pending_user.pending_state_at
+                if diff >= timedelta(seconds=15*60):
                     pending_user.pending_state_at = None
                     pending_user.state = UserStateEnum.READY
+                    pending_user.save()
                     cleared_users.append(pending_user)
+                    logger.debug(f"User {pending_user.state} state has been refreshed")
 
         return cleared_users
 
