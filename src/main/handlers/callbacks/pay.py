@@ -108,7 +108,7 @@ async def callbacks_confirm_pay(callback: types.CallbackQuery):
             await callback.answer()
             return
 
-        response = requests.get(f"{WALLET_PREVIEW_LINK}?id={pay_id}", headers=WALLET_HEADERS)
+        response = requests.get(f"{WALLET_PREVIEW_LINK}?id={pay_dto.pay_id}", headers=WALLET_HEADERS)
         logger.debug(response.text)
         if response.ok:
             pay_dto.is_verified = True
