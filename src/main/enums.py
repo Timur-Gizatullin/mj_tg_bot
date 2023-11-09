@@ -45,6 +45,7 @@ class ProductEnum(BaseStrEnum):
 
 class PriceEnum(BaseStrEnum):
     imagine = "imagine"
+    blend = "blend"
     describe = "describe"
     vary = "vary"
     zoom = "zoom"

@@ -18,7 +18,7 @@ from main.enums import (
     UserRoleEnum,
     UserStateEnum,
 )
-from main.handlers.helpers import check_subs
+from main.handlers.helpers import check_subs, is_enough_balance
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import _trigger_payload, blend_trigger
@@ -231,6 +231,9 @@ async def mj_group_handler(messages: list[Message]) -> None:
     chat_id = messages[0].chat.id
     media_list = await Blend.objects.get_blends_by_group_id(messages[0].media_group_id)
     user: User = await User.objects.get_user_by_chat_id(chat_id)
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.blend)
+    if not await is_enough_balance(telegram_user=user, amount=option_price.price, message=messages[0]):
+        return
     answer = await bot.send_message(chat_id, f"Загружено {len(media_list)} фотографий")
     for message in messages:
         await blend_images_handler(message)
@@ -466,31 +469,13 @@ async def describe_handler(message: Message):
     if not user:
         await message.answer("Напишите /start")
         return
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.describe)
+    await is_enough_balance(telegram_user=user, amount=option_price.price, message=message)
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         return
     if user.state == UserStateEnum.BANNED:
         await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
-        return
-    if user.balance - 2 < 0:
-        reply = """Ваш баланс {}.
-        
-💰 Вам доступно только  5 бесплатных токенов ежедневно. 
-
-🌇Пополни свой счёт и получи быстрые генерации без очереди! 🎆
-
-💤 Или возвращайтесь завтра!"""
-        builder = InlineKeyboardBuilder()
-        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
-        builder.row(*lk_buttons)
-        await message.answer(reply.format(user.balance), reply_markup=builder.as_markup())
-
-        try:
-            await check_subs(user, message)
-        except Exception as e:
-            logger.error(e)
-        user.state = UserStateEnum.READY
-        await user.asave()
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)

@@ -45,7 +45,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
 
     try:
         if action == "gpt":
-            if not await is_enough_balance(user, callback, 1):
+            option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+            if not await is_enough_balance(telegram_user=user, callback=callback, amount=option_price.price):
                 return
 
             messages = [
@@ -77,7 +78,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
             await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
             return
         if action == "stay":
-            if not await is_enough_balance(user, callback, 2):
+            option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
+            if not await is_enough_balance(telegram_user=user, callback=callback, amount=option_price.price):
                 return
 
             await callback.message.answer("Идет генерация... ⌛\n")
@@ -115,7 +117,8 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
     choose = int(callback.data.split("_")[1])
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
     telegram_user.state = UserStateEnum.PENDING
     await telegram_user.asave()

@@ -5,7 +5,7 @@ from aiogram import Router, types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, UserStateEnum, PriceEnum
 from main.handlers.commands import bot
 from main.handlers.helpers import (
     get_gpt_prompt_suggestions,
@@ -28,7 +28,7 @@ from main.utils import callback_data_util, is_has_censor
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import BanWord, Prompt, TelegramAnswer, User  # noqa: E402
+from main.models import BanWord, Prompt, TelegramAnswer, User, OptionPrice  # noqa: E402
 
 mj_router = Router()
 
@@ -51,7 +51,10 @@ async def callbacks_variations(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.variation)
+    if not await is_enough_balance(telegram_user=telegram_user, callback=callback, amount=option_price.price):
+        return
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     if action == "V1":
@@ -75,8 +78,8 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    cost = 4 if action == "2x" else 8
-    if not await is_can_use(telegram_user, callback, cost):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_2x) if action == "2x" else await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_4x)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     await send_upsample_trigger(
@@ -109,8 +112,8 @@ async def callbacks_upsamples(callback: types.CallbackQuery):
 
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
-
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.upsample)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     await callback.message.answer(help_message)
@@ -135,7 +138,8 @@ async def callback_vary(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.vary)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     if action == "strong":
@@ -153,7 +157,8 @@ async def callback_reset(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.reroll)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     await send_reset_trigger(
@@ -174,7 +179,8 @@ async def callback_zoom(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.zoom)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     if action == "2":
@@ -193,7 +199,8 @@ async def callback_pan(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.pan)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     await send_pan_trigger(queue=queue, direction=action, message=callback.message, user=telegram_user)
@@ -236,12 +243,14 @@ async def suggestion_callback(callback: types.CallbackQuery):
         return
 
     if action == "gpt":
-        if not await is_enough_balance(user, callback, 1):
+        option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+        if not await is_enough_balance(telegram_user=user, callback=callback, amount=option_price.price):
             return
         await get_gpt_prompt_suggestions(prompt, callback, user, data)
         return
     if action == "stay":
-        if not await is_enough_balance(user, callback, 2):
+        option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.imagine)
+        if not await is_enough_balance(telegram_user=user, callback=callback, amount=option_price.price):
             return
 
         if data["img"]:
@@ -257,7 +266,8 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     logger.debug(img_id)
     telegram_user: User = await User.objects.get_user_by_chat_id(callback.message.chat.id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.imagine)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     try:
@@ -281,7 +291,8 @@ async def callbacks_describe(callback: types.CallbackQuery):
     action = callback.data.split("_")[1]
     telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
 
-    if not await is_can_use(telegram_user, callback, 2):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.describe)
+    if not await is_can_use(telegram_user, callback, option_price.price):
         return
 
     if callback.data != "reset" and action != "all":
