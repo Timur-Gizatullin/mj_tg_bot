@@ -93,14 +93,13 @@ async def check_subs(telegram_user, message):
         member = await bot.get_chat_member(f"@{channel.channel}", int(telegram_user.chat_id))
         if member.status == ChatMemberStatus.LEFT:
             is_subscribed = False
-            break
         builder.row(types.InlineKeyboardButton(text=f"{channel.channel}", url=f"{channel.link}"))
     builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="sub_checkin"))
     if not is_subscribed:
         reply = (
             "Хочешь получать 5 токенов ежедневно? 🪙\n\n" "Подпишись и оставайся в наших интересных и полезных каналах!"
         )
-        message.answer(text=reply, reply_markup=builder.as_markup())
+        await message.answer(text=reply, reply_markup=builder.as_markup())
 
 
 async def is_ready(telegram_user, callback):
