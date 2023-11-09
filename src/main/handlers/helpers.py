@@ -74,8 +74,10 @@ async def is_enough_balance(telegram_user, callback, amount):
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
         await callback.message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
-
-        await check_subs(telegram_user, callback.message)
+        try:
+            await check_subs(telegram_user, callback.message)
+        except Exception as e:
+            logger.error(e)
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()
         await callback.answer()

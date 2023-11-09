@@ -485,8 +485,12 @@ async def describe_handler(message: Message):
         builder.row(*lk_buttons)
         await message.answer(reply.format(user.balance), reply_markup=builder.as_markup())
 
-        await check_subs(user, message)
-
+        try:
+            await check_subs(user, message)
+        except Exception as e:
+            logger.error(e)
+        user.state = UserStateEnum.READY
+        await user.asave()
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
