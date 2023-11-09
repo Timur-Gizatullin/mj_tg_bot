@@ -11,6 +11,7 @@ from decouple import config
 from loguru import logger
 
 from main.enums import AnswerTypeEnum, ProductEnum, UserRoleEnum, UserStateEnum, PriceEnum
+from main.handlers.helpers import check_subs
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
 from main.handlers.utils.interactions import (
@@ -493,6 +494,9 @@ async def describe_handler(message: Message):
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
         await message.answer(reply.format(user.balance), reply_markup=builder.as_markup())
+
+        await check_subs(user, message)
+
         return
 
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)

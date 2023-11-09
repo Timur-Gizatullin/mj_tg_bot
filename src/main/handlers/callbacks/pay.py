@@ -3,6 +3,7 @@ import os
 import django
 import requests
 from aiogram import Router, types
+from aiogram.enums import ChatMemberStatus
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
@@ -14,7 +15,7 @@ from main.keyboards.pay import get_inline_keyboard_from_buttons
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import Pay, User  # noqa: E402
+from main.models import Pay, User, Channel  # noqa: E402
 
 pay_router = Router()
 
@@ -145,3 +146,26 @@ async def pay_options_callback(callback: types.CallbackQuery):
 
     await callback.message.answer(answer, reply_markup=builder.as_markup())
     await callback.answer()
+
+
+@pay_router.callback_query(lambda c: c.data.startswith("sub"))
+async def pay_options_callback(callback: types.CallbackQuery):
+    action = callback.data.split("_")[-1]
+
+    channels: list[Channel] = await Channel.objects.get_all_channels()
+
+    if action == "checkin":
+        is_subscribed = True
+        for channel in channels:
+            member = await callback.bot.get_chat_member(f"@{channel.channel}", int(callback.message.chat.id))
+            if member.status == ChatMemberStatus.LEFT:
+                is_subscribed = False
+                break
+
+        if is_subscribed:
+            reply = ("🎉 🎉🎉Поздравляем! Пока Вы подписаны на наши каналы, "
+                     "Вам будут начисляться 5 бесплатных токенов ежедневно!")
+        else:
+            reply = "🚨🚨🚨 пожалуйста подпишитесь на наши каналы, и Вы будtте получать  5 токенов ежедневно."
+
+        await callback.message.answer(text=reply)

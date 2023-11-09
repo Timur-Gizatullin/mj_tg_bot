@@ -2,14 +2,16 @@ import os
 
 import django
 import langdetect
-from aiogram import types
+from aiogram import types, Bot
+from aiogram.enums import ParseMode, ChatMemberStatus
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.enums import UserRoleEnum, UserStateEnum, AnswerTypeEnum, PriceEnum
 from main.handlers.commands import gpt
-from main.models import TelegramAnswer, OptionPrice
+from main.models import TelegramAnswer, OptionPrice, Channel
 from main.utils import callback_data_util
+from t_bot.settings import TELEGRAM_TOKEN
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
@@ -54,6 +56,8 @@ TRANSLATOR_GPT_OPTION = (
     "If you get message in english, just send it back, do not translate"
 )
 
+bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+
 
 async def is_enough_balance(telegram_user, callback, amount):
     reply = """Ваш баланс {}.
@@ -62,17 +66,41 @@ async def is_enough_balance(telegram_user, callback, amount):
 
 🌇Пополни свой счёт и получи быстрые генерации без очереди! 🎆
 
-💤 Или возвращайтесь завтра!"""
+💤 Или возвращайтесь завтра!
+"""
+
     if telegram_user.balance - amount < 0:
         builder = InlineKeyboardBuilder()
         lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
         builder.row(*lk_buttons)
         await callback.message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
+
+        await check_subs(telegram_user, callback.message)
+
         await callback.answer()
         return False
 
     return True
 
+async def check_subs(telegram_user, message):
+    channels: list[Channel] = await Channel.objects.get_all_channels()
+
+    builder = InlineKeyboardBuilder()
+
+    is_subscribed = True
+    for channel in channels:
+        member = await bot.get_chat_member(f"@{channel.channel}", int(telegram_user.chat_id))
+        if member.status == ChatMemberStatus.LEFT:
+            is_subscribed = False
+            break
+        builder.row(types.InlineKeyboardButton(text=f"{channel.channel}", url=f"{channel.link}"))
+    builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="sub_checkin"))
+    if not is_subscribed:
+        reply = (
+            "Хочешь получать 5 токенов ежедневно? 🪙\n\n"
+            "Подпишись и оставайся в наших интересных и полезных каналах!"
+        )
+        message.answer(text=reply, reply_markup=builder.as_markup())
 
 async def is_ready(telegram_user, callback):
     if telegram_user.state == UserStateEnum.PENDING:
