@@ -11,6 +11,19 @@ from main.enums import UserRoleEnum, UserStateEnum
 
 
 class UserManager(AbstractUserManager):
+
+    @sync_to_async()
+    def get_today_inactive_user(self):
+        return self.filter(is_active=False).filter(gen_date__contains=date.today()).count()
+
+    @sync_to_async()
+    def get_month_new_users(self):
+        return self.filter(is_active=True).filter(date_joined__month=date.today().month).count()
+
+    @sync_to_async()
+    def get_month_stoped_users(self):
+        return self.filter(is_active=False).filter(gen_date__month=date.today().month).count()
+
     @sync_to_async()
     def get_admins(self):
         return list(self.filter(role=UserRoleEnum.ADMIN).all())
@@ -20,8 +33,8 @@ class UserManager(AbstractUserManager):
         return list(self.filter(state=UserStateEnum.PENDING).all())
 
     @sync_to_async()
-    def get_users_count(self):
-        return len(self.exclude(role=UserRoleEnum.ADMIN).all())
+    def get_active_users_count(self):
+        return len(self.exclude(role=UserRoleEnum.ADMIN).filter(is_active=True).all())
 
     @sync_to_async()
     def get_users_today_count(self):

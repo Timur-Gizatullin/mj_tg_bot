@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 from asgiref.sync import sync_to_async
@@ -14,6 +14,40 @@ class PayManager(models.Manager):
     @sync_to_async()
     def get_unverified_pay_by_id(self, pay_id):
         return self.filter(pk=pay_id, is_verified=False).first()
+
+    @sync_to_async()
+    def get_today_pay_sum(self):
+        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(created_at__contains=date.today())
+        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(created_at__contains=date.today())
+
+        total_sum = 0
+
+        for yookassa_pay in yookassa_pays:
+            total_sum += yookassa_pay.amount
+
+        for wallet_pay in wallet_pays:
+            total_sum += (wallet_pay.amount*100)
+
+        return total_sum
+
+    @sync_to_async()
+    def get_month_pay_sum(self):
+        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(
+            created_at__month=date.today().month)
+        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(
+            created_at__month=date.today().month)
+
+        total_sum = 0
+
+        for yookassa_pay in yookassa_pays:
+            total_sum += yookassa_pay.amount
+
+        for wallet_pay in wallet_pays:
+            total_sum += (wallet_pay.amount * 100)
+
+        return total_sum
+
+
 
 
 class Pay(models.Model):
