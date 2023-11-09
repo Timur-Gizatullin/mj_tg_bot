@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 from django.db import models
 
-from main.enums import PriceEnum, CurrencyEnum
+from main.enums import CurrencyEnum, PriceEnum
 
 
 class OptionPriceManager(models.Manager):

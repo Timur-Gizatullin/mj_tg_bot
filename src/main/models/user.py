@@ -40,12 +40,12 @@ class UserManager(AbstractUserManager):
         return len(self.filter(date_joined__contains=date.today()).exclude(invited_by=None).all())
 
     def get_users_to_send_message(
-            self,
-            role: int | None = None,
-            limit: int | None = None,
-            offset: int | None = None,
-            pay_date: int | None = None,
-            gen_date: int | None = None,
+        self,
+        role: int | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        pay_date: int | None = None,
+        gen_date: int | None = None,
     ):
         q_set: QuerySet = self
         q_set = q_set.filter(role=role) if role else q_set
@@ -60,14 +60,15 @@ class UserManager(AbstractUserManager):
 
 class User(AbstractUser):
     username = models.CharField(null=True, unique=True, blank=True)
-    telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме")
+    telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме", blank=True)
     chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм")
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
     pending_state_at = models.DateTimeField(blank=True, null=True, verbose_name="Ожидает с")
-    gen_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней генерации", auto_now=True,
-                                              blank=True)
+    gen_date: datetime = models.DateTimeField(
+        null=True, verbose_name="Дата последней генерации", auto_now=True, blank=True
+    )
     pay_date: datetime = models.DateTimeField(null=True, verbose_name="Дата последней оплаты", blank=True)
     password = models.CharField(blank=True, verbose_name="Пароль")
     invited_by = models.ForeignKey(
@@ -122,5 +123,5 @@ def make_balance_five(modeladmin, request, queryset):
 
 class UserAudit(admin.ModelAdmin):
     list_filter = ("role", "state")
-    search_fields = ("telegram_username",)
+    search_fields = ("telegram_username", "chat_id")
     actions = (make_ready, make_balance_five)

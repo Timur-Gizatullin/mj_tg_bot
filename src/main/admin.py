@@ -7,13 +7,13 @@ from main.models import (
     Describe,
     DsMjUser,
     GptContext,
+    OptionPrice,
     Pay,
     Price,
     Prompt,
     Referral,
     TelegramAnswer,
     User,
-    OptionPrice
 )
 from main.models.user import UserAudit
 

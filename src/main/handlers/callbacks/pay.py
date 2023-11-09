@@ -15,7 +15,7 @@ from main.keyboards.pay import get_inline_keyboard_from_buttons
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import Pay, User, Channel  # noqa: E402
+from main.models import Channel, Pay, User  # noqa: E402
 
 pay_router = Router()
 
@@ -163,8 +163,10 @@ async def pay_options_callback(callback: types.CallbackQuery):
                 break
 
         if is_subscribed:
-            reply = ("🎉 🎉🎉Поздравляем! Пока Вы подписаны на наши каналы, "
-                     "Вам будут начисляться 5 бесплатных токенов ежедневно!")
+            reply = (
+                "🎉 🎉🎉Поздравляем! Пока Вы подписаны на наши каналы, "
+                "Вам будут начисляться 5 бесплатных токенов ежедневно!"
+            )
         else:
             reply = "🚨🚨🚨 пожалуйста подпишитесь на наши каналы, и Вы будtте получать  5 токенов ежедневно."
 

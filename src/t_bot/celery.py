@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -69,6 +70,7 @@ def check_subscriptions():
                         await user.asave()
                     except Exception as e:
                         logger.warning(e)
+
     try:
         async_to_sync(task, force_new_loop=True)(users, channels)
     except Exception as e:
@@ -123,7 +125,8 @@ def check_queue():
                         r_queue.lpop("admin", j_chat_id)
 
     try:
-        async_to_sync(task, force_new_loop=True)(base_queue, admin_queue, time, queues)
+        asyncio.get_event_loop().run_until_complete(task(base_queue, admin_queue, time, queues))
+        # async_to_sync(task, force_new_loop=True)(base_queue, admin_queue, time, queues)
     except Exception as e:
         logger.error(e)
 

@@ -8,8 +8,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
 from main.constants import BOT_START_HOST
-from main.enums import ProductEnum, AnswerTypeEnum
-from main.models import Referral, User, TelegramAnswer
+from main.enums import AnswerTypeEnum, ProductEnum
+from main.models import Referral, TelegramAnswer, User
 from main.models.prices import Price
 from main.utils import MenuState
 

@@ -7,9 +7,9 @@ from aiogram.enums import ParseMode
 from loguru import logger
 from redis import Redis
 
-from main.enums import UserRoleEnum, UserStateEnum, PriceEnum
+from main.enums import PriceEnum, UserRoleEnum, UserStateEnum
 from main.handlers.utils.const import INTERACTION_URL
-from main.models import User, Price, OptionPrice
+from main.models import OptionPrice, Price, User
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
 

@@ -6,17 +6,11 @@ from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, UserRoleEnum, UserStateEnum, PriceEnum
-from main.handlers.commands import bot, gpt
-from main.handlers.helpers import (
-    GPT_OPTION,
-    gpt_translate,
-    is_can_use,
-    is_enough_balance,
-    is_ready,
-)
+from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
+from main.handlers.commands import bot
+from main.handlers.helpers import gpt_translate, is_can_use, is_enough_balance, is_ready
 from main.keyboards.commands import resources
-from main.models import BanWord, TelegramAnswer, User, OptionPrice
+from main.models import BanWord, OptionPrice, TelegramAnswer, User
 from main.utils import callback_data_util, is_has_censor
 
 dalle_router = Router()
@@ -55,11 +49,14 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                 return
 
             messages = [
-                {"role": "system", "content": await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_OPTION)},
+                {
+                    "role": "system",
+                    "content": await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.GPT_OPTION),
+                },
                 {"role": "user", "content": prompt},
             ]
             answer = await callback.message.answer(f"GPT думает ... ⌛\n")
-            prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+            prompt_suggestions = await openai.ChatCompletion.acreate(model="gpt-3.5-turbo", messages=messages)
 
             builder = InlineKeyboardBuilder()
             buttons = [

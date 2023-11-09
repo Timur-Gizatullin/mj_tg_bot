@@ -9,8 +9,9 @@ class ChannelManager(models.Manager):
 
 
 class Channel(models.Model):
-    channel: str = models.CharField(verbose_name="Имя канала",
-                                    help_text="В телеграме обозначается как @Имя_канала, <@> указывать не надо")
+    channel: str = models.CharField(
+        verbose_name="Имя канала", help_text="В телеграме обозначается как @Имя_канала, <@> указывать не надо"
+    )
     link: str = models.CharField(verbose_name="Ссылка на канал", help_text="Ссылка, прикрепляемая к кнопке")
 
     class Meta:

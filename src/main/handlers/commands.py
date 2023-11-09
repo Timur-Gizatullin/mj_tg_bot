@@ -10,14 +10,17 @@ from aiogram_media_group import media_group_handler
 from decouple import config
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, ProductEnum, UserRoleEnum, UserStateEnum, PriceEnum
+from main.enums import (
+    AnswerTypeEnum,
+    PriceEnum,
+    ProductEnum,
+    UserRoleEnum,
+    UserStateEnum,
+)
 from main.handlers.helpers import check_subs
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
-from main.handlers.utils.interactions import (
-    _trigger_payload,
-    blend_trigger,
-)
+from main.handlers.utils.interactions import _trigger_payload, blend_trigger
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
@@ -25,11 +28,12 @@ from main.models import (
     Blend,
     Describe,
     GptContext,
+    OptionPrice,
     Pay,
     Price,
     Referral,
     TelegramAnswer,
-    User, OptionPrice,
+    User,
 )
 from main.utils import (
     MenuState,
@@ -44,7 +48,6 @@ dp = Dispatcher()
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
 openai.api_key = config("OPEN_AI_API_KEY")
-gpt = openai.ChatCompletion
 
 img_handler = {}
 
@@ -134,8 +137,8 @@ async def pay_command(message: Message, state: FSMContext):
     user = await is_user_exist(str(message.chat.id))
     answer = (
         f"Ваш баланс в токенах: {user.balance}\n"
-        f"{TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.PRICES)}"
-            )
+        f"{await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.PRICES)}"
+    )
 
     prices: list[Price] = await Price.objects.get_active_prices_by_product(ProductEnum.TOKEN)
     options_button = []
@@ -319,7 +322,7 @@ async def gpt_handler(message: types.Message):
 
     try:
         answer = await message.answer("GPT думает ...")
-        gpt_answer = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        gpt_answer = await openai.ChatCompletion.acreate(model="gpt-3.5-turbo", messages=messages)
     except Exception as e:
         logger.error(f"Не удалось получить ответ от ChatGPT из-за непредвиденной ошибки\n{e}")
         user.state = UserStateEnum.READY

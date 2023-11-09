@@ -2,14 +2,13 @@ import os
 
 import django
 import langdetect
-from aiogram import types, Bot
-from aiogram.enums import ParseMode, ChatMemberStatus
+from aiogram import Bot, types
+from aiogram.enums import ChatMemberStatus, ParseMode
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import UserRoleEnum, UserStateEnum, AnswerTypeEnum, PriceEnum
-from main.handlers.commands import gpt
-from main.models import TelegramAnswer, OptionPrice, Channel
+from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
+from main.models import Channel, OptionPrice, TelegramAnswer
 from main.utils import callback_data_util
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -82,6 +81,7 @@ async def is_enough_balance(telegram_user, callback, amount):
 
     return True
 
+
 async def check_subs(telegram_user, message):
     channels: list[Channel] = await Channel.objects.get_all_channels()
 
@@ -97,10 +97,10 @@ async def check_subs(telegram_user, message):
     builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="sub_checkin"))
     if not is_subscribed:
         reply = (
-            "Хочешь получать 5 токенов ежедневно? 🪙\n\n"
-            "Подпишись и оставайся в наших интересных и полезных каналах!"
+            "Хочешь получать 5 токенов ежедневно? 🪙\n\n" "Подпишись и оставайся в наших интересных и полезных каналах!"
         )
         message.answer(text=reply, reply_markup=builder.as_markup())
+
 
 async def is_ready(telegram_user, callback):
     if telegram_user.state == UserStateEnum.PENDING:
@@ -138,7 +138,7 @@ async def gpt_translate(message):
             {"role": "user", "content": message},
         ]
 
-        prompt = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt = await openai.ChatCompletion.acreate(model="gpt-3.5-turbo", messages=messages)
         prompt = prompt.choices[0].message.content
 
     return prompt
@@ -151,7 +151,7 @@ async def get_gpt_prompt_suggestions(prompt, callback, user, data):
     ]
     try:
         await callback.message.answer("Идет генерация ...")
-        prompt_suggestions = await gpt.acreate(model="gpt-3.5-turbo", messages=messages)
+        prompt_suggestions = await openai.ChatCompletion.acreate(model="gpt-3.5-turbo", messages=messages)
 
         builder = InlineKeyboardBuilder()
         buttons = [
