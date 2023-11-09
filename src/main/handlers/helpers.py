@@ -76,7 +76,8 @@ async def is_enough_balance(telegram_user, callback, amount):
         await callback.message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
 
         await check_subs(telegram_user, callback.message)
-
+        telegram_user.state = UserStateEnum.READY
+        await telegram_user.asave()
         await callback.answer()
         return False
 
