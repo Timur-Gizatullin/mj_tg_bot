@@ -27,6 +27,7 @@ class ReferralManager(models.Manager):
         referral.referrer.balance += 6
         referral.used_count += 1
         referral.referrer.save()
+        referral.save()
 
     @sync_to_async()
     def get_referral_by_user(self, user: User) -> "Referral":
