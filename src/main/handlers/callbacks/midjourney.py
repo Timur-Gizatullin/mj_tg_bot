@@ -95,7 +95,7 @@ async def callbacks_confirm_upsamples_v5(callback: types.CallbackQuery):
     )
     await bot.send_document(
         chat_id=callback.message.chat.id,
-        caption=TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.UPSCALE_CONFIRM),
+        caption=await TelegramAnswer.objects.get_message_by_type(AnswerTypeEnum.UPSCALE_CONFIRM),
         reply_markup=builder.as_markup(),
         document=callback.message.document.file_id,
     )
