@@ -129,17 +129,17 @@ async def imagine_trigger(message, prompt, user):
     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="imagine")
 
 
-#
-# async def describe_reset_trigger(message_id: str, message):
-#     kwargs = {
-#         "message_flags": 0,
-#         "message_id": message_id,
-#     }
-#     payload = _trigger_payload(3, {"component_type": 2, "custom_id": "MJ::Picread::Retry"}, **kwargs)
-#     token = await mj_user_token_queue.get_sender_token()
-#     header = {"authorization": token}
-#
-#     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")
+
+async def describe_reset_trigger(message_id: str, message, user):
+    kwargs = {
+        "message_flags": 0,
+        "message_id": message_id,
+    }
+    payload = _trigger_payload(3, {"component_type": 2, "custom_id": "MJ::Picread::Retry"}, **kwargs)
+    token = await RedisMjUserTokenQueue().get_sender_token(user)
+    header = {"authorization": token}
+
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")
 
 
 async def blend_trigger(blends: list[Blend], message, user):
@@ -172,4 +172,4 @@ async def blend_trigger(blends: list[Blend], message, user):
     token = await RedisMjUserTokenQueue().get_sender_token(user)
     header = {"authorization": token}
 
-    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="describe_retry")
+    await QueueHandler.include_queue(payload=payload, header=header, message=message, action="blend")

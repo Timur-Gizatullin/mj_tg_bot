@@ -2,6 +2,7 @@ import os
 
 import django
 import langdetect
+import openai
 from aiogram import Bot, types
 from aiogram.enums import ChatMemberStatus, ParseMode
 from aiogram.utils.keyboard import InlineKeyboardBuilder

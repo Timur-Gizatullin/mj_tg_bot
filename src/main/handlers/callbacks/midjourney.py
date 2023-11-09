@@ -21,7 +21,7 @@ from main.handlers.utils.interactions import (
     send_upsample_trigger,
     send_variation_trigger,
     send_vary_trigger,
-    send_zoom_trigger,
+    send_zoom_trigger, describe_reset_trigger,
 )
 from main.utils import callback_data_util, is_has_censor
 
@@ -272,5 +272,25 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
     prompt = f"{img_url} {prompt}" if img_url else prompt
 
     await imagine_trigger(message=callback.message, prompt=prompt, user=telegram_user)
+
+    await callback.answer()
+
+
+@mj_router.callback_query(lambda c: c.data.startswith("describe"))
+async def callbacks_describe(callback: types.CallbackQuery):
+    action = callback.data.split("_")[1]
+    telegram_user: User = await User.objects.get_user_by_chat_id(chat_id=callback.message.chat.id)
+
+    if not await is_can_use(telegram_user, callback, 2):
+        return
+
+    if callback.data != "reset" and action != "all":
+        prompt = callback.message.caption.split("\n\n")[int(action)]
+        logger.debug(callback.message.caption)
+        logger.debug(prompt)
+
+        await imagine_trigger(message=callback.message, prompt=prompt, user=telegram_user)
+    elif callback.data == "reset":
+        await describe_reset_trigger(message_id=telegram_user.chat_id, message=callback.message, user=telegram_user)
 
     await callback.answer()
