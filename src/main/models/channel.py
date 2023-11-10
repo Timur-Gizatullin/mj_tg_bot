@@ -5,10 +5,13 @@ from django.db import models
 class ChannelManager(models.Manager):
     @sync_to_async()
     def get_all_channels(self):
-        return list(self.all())
+        return list(self.exclude(label=None).all())
 
 
 class Channel(models.Model):
+    label: str = models.CharField(
+        verbose_name="Название канала", help_text="Это поле будет отображаться на кнопке", null=True
+    )
     channel: str = models.CharField(
         verbose_name="Имя канала", help_text="В телеграме обозначается как @Имя_канала, <@> указывать не надо"
     )
@@ -19,6 +22,6 @@ class Channel(models.Model):
         verbose_name_plural = "Каналы"
 
     def __str__(self):
-        return self.channel
+        return self.label
 
     objects = ChannelManager()

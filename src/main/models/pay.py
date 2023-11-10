@@ -67,8 +67,7 @@ class Pay(models.Model):
         verbose_name_plural = "Платежи"
 
     def __str__(self):
-        user = self.user.telegram_username if self.user.telegram_username else self.user.chat_id
-        return f"{user} - {int(self.amount)} руб. [{self.created_at.strftime('%d/%m/%Y, %H:%M:%S')}]"
+        return f"{int(self.amount)} руб. [{self.created_at.strftime('%d/%m/%Y, %H:%M:%S')}]"
 
 
 class PayAudit(admin.ModelAdmin):
