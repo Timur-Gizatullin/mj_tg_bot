@@ -48,6 +48,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
 
     try:
         if action == "gpt":
+            logger.debug("PRICE CHECK")
             option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
             if not await is_enough_balance(telegram_user=user, callback=callback, amount=option_price.price):
                 return

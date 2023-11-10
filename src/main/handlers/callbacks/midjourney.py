@@ -228,9 +228,8 @@ async def suggestion_callback(callback: types.CallbackQuery):
 
     if not await is_ready(user, callback):
         return
-
     user.state = UserStateEnum.PENDING
-    user.state = datetime.datetime.now()
+    user.pending_state_at = datetime.datetime.now()
     await user.asave()
 
     prompt = await gpt_translate(message)
