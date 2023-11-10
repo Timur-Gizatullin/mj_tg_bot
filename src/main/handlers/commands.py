@@ -102,7 +102,7 @@ async def gpt_command(message: Message, state: FSMContext):
     await state.set_state(MenuState.gpt)
 
 
-@dp.message(F.text.lower() == "dall-e")
+@dp.message(F.text.lower() == "dall-e-3")
 async def dalle_command(message: Message, state: FSMContext):
     intro_message = (
         "🌆Для создания изображения отправь боту только ключевые фразы, раздели их логической запятой;\n\n"
@@ -197,7 +197,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     kb = [
         [
             types.KeyboardButton(text="MidJourney"),
-            types.KeyboardButton(text="DALL-E"),
+            types.KeyboardButton(text="DALL-E-3"),
         ],
         [
             types.KeyboardButton(text="GPT"),

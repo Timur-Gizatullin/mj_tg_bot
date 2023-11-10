@@ -86,7 +86,7 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                 return
 
             await callback.message.answer("Идет генерация... ⌛\n")
-            img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+            img_data = await openai.Image.acreate(model="dall-e-3", prompt=prompt, n=1, size="1024x1024")
             img_links = img_data["data"]
             for img_link in img_links:
                 raw_image = requests.get(img_link["url"]).content
@@ -136,7 +136,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
 
     try:
         await callback.message.answer(f"Идет генерация... ⌛\n")
-        img_data = await openai.Image.acreate(prompt=prompt, n=1, size="1024x1024")
+        img_data = await openai.Image.acreate(model="dall-e-3", prompt=prompt, n=1, size="1024x1024")
         img_links = img_data["data"]
         for img_link in img_links:
             raw_image = requests.get(img_link["url"]).content
