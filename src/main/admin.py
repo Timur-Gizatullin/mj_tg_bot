@@ -15,6 +15,7 @@ from main.models import (
     TelegramAnswer,
     User,
 )
+from main.models.pay import PayAudit
 from main.models.user import UserAudit
 
 admin.site.register(User, UserAudit)
@@ -22,7 +23,7 @@ admin.site.register(BanWord)
 admin.site.register(TelegramAnswer)
 admin.site.register(Referral)
 admin.site.register(Prompt)
-admin.site.register(Pay)
+admin.site.register(Pay, PayAudit)
 admin.site.register(Describe)
 admin.site.register(Blend)
 admin.site.register(GptContext)

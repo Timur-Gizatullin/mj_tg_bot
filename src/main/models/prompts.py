@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from asgiref.sync import sync_to_async
 from django.db import models
 
@@ -21,12 +23,12 @@ class Prompt(models.Model):
     discord_message_id = models.CharField(null=True, verbose_name="ID сообщения в дискорд")
     message_hash = models.CharField(null=True, verbose_name="хэш сообщения")
     caption = models.CharField(null=True, verbose_name="Подпись")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, verbose_name="Время создания")
+    created_at: datetime = models.DateTimeField(auto_now_add=True, blank=True, verbose_name="Время создания")
 
     objects = PromptManager()
 
     def __str__(self):
-        return f"{self.prompt[:60]}[{self.created_at}]"
+        return f"{self.prompt[:60]}[{self.created_at.strftime('%d/%m/%Y, %H:%M:%S')}]"
 
     class Meta:
         verbose_name = "Промпт"

@@ -18,11 +18,11 @@ async def callback_stats(callback: types.CallbackQuery):
     if action == "user":
         active_user_count = await User.objects.get_active_users_count()
         today_user_count = await User.objects.get_users_today_count()
-        today_pay_sum = await Pay.objects.get_today_pay_sum()
+        today_pay_sum = int(await Pay.objects.get_today_pay_sum())
         today_user_stoped = await User.objects.get_today_inactive_user()
         month_user_stopes = await User.objects.get_month_new_users()
         month_stoped_users = await User.objects.get_month_stoped_users()
-        month_pay_sum = await Pay.objects.get_month_pay_sum()
+        month_pay_sum = int(await Pay.objects.get_month_pay_sum())
 
         answer = (
             f"Колличество активных юзеров: {active_user_count}\n"

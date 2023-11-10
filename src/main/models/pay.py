@@ -2,6 +2,7 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from asgiref.sync import sync_to_async
+from django.contrib import admin
 from django.db import models
 
 from main.enums import MerchantEnum
@@ -17,8 +18,10 @@ class PayManager(models.Manager):
 
     @sync_to_async()
     def get_today_pay_sum(self):
-        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(created_at__contains=date.today())
-        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(created_at__contains=date.today())
+        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(
+            created_at__contains=date.today())
+        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(
+            created_at__contains=date.today())
 
         total_sum = 0
 
@@ -26,7 +29,7 @@ class PayManager(models.Manager):
             total_sum += yookassa_pay.amount
 
         for wallet_pay in wallet_pays:
-            total_sum += (wallet_pay.amount*100)
+            total_sum += (wallet_pay.amount * 100)
 
         return total_sum
 
@@ -48,8 +51,6 @@ class PayManager(models.Manager):
         return total_sum
 
 
-
-
 class Pay(models.Model):
     amount: Decimal = models.DecimalField(null=False, decimal_places=4, max_digits=12, verbose_name="Сумма оплаты")
     token_count: int = models.IntegerField(null=True, verbose_name="Эквивалент в токенах")
@@ -64,3 +65,12 @@ class Pay(models.Model):
     class Meta:
         verbose_name = "Платеж"
         verbose_name_plural = "Платежи"
+
+    def __str__(self):
+        user = self.user.telegram_username if self.user.telegram_username else self.user.chat_id
+        return f"{user} - {int(self.amount)} руб. [{self.created_at.strftime('%d/%m/%Y, %H:%M:%S')}]"
+
+
+class PayAudit(admin.ModelAdmin):
+    list_filter = ("merchant", "is_verified")
+    search_fields = ("user",)
