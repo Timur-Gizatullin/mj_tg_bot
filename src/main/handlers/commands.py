@@ -472,7 +472,8 @@ async def describe_handler(message: Message):
         await message.answer("Напишите /start")
         return
     option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.describe)
-    await is_enough_balance(telegram_user=user, amount=option_price.price, message=message)
+    if not await is_enough_balance(telegram_user=user, amount=option_price.price, message=message):
+        return
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         return

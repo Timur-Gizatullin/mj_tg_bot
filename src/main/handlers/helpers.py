@@ -52,18 +52,20 @@ async def is_enough_balance(telegram_user, amount, message=None, callback=None):
 
         return True
     else:
-        builder = InlineKeyboardBuilder()
-        lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
-        builder.row(*lk_buttons)
-        await message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
+        if telegram_user.balance - amount < 0:
+            builder = InlineKeyboardBuilder()
+            lk_buttons = (types.InlineKeyboardButton(text="Пополнить баланс Тарифы", callback_data="lk_options"),)
+            builder.row(*lk_buttons)
+            await message.answer(reply.format(telegram_user.balance), reply_markup=builder.as_markup())
 
-        try:
-            await check_subs(telegram_user, message)
-        except Exception as e:
-            logger.error(e)
-        telegram_user.state = UserStateEnum.READY
-        await telegram_user.asave()
-        return
+            try:
+                await check_subs(telegram_user, message)
+            except Exception as e:
+                logger.error(e)
+            telegram_user.state = UserStateEnum.READY
+            await telegram_user.asave()
+            return False
+        return True
 
 
 async def check_subs(telegram_user, message):
