@@ -22,6 +22,6 @@ class Channel(models.Model):
         verbose_name_plural = "Каналы"
 
     def __str__(self):
-        return self.label
+        return f"{self.label} #{self.pk}"
 
     objects = ChannelManager()

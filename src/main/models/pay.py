@@ -29,7 +29,7 @@ class PayManager(models.Manager):
             total_sum += yookassa_pay.amount
 
         for wallet_pay in wallet_pays:
-            total_sum += (wallet_pay.amount * 100)
+            total_sum += wallet_pay.amount
 
         return total_sum
 
@@ -46,7 +46,7 @@ class PayManager(models.Manager):
             total_sum += yookassa_pay.amount
 
         for wallet_pay in wallet_pays:
-            total_sum += (wallet_pay.amount * 100)
+            total_sum += wallet_pay.amount
 
         return total_sum
 

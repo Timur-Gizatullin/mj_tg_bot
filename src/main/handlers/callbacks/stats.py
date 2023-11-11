@@ -27,11 +27,11 @@ async def callback_stats(callback: types.CallbackQuery):
         answer = (
             f"Колличество активных юзеров: {active_user_count}\n"
                  f"Новые пользователи за сегодня: {today_user_count}\n"
-                 f"Сумма оплат за сегодня: {today_pay_sum}\n"
+                 f"Сумма оплат за сегодня: {int(today_pay_sum)}\n"
                  f"Остановили бота за сегодня {today_user_stoped}\n"
                  f"Новые пользователи с начала месяца {month_user_stopes}\n"
                  f"Остановили бот с начала месяца: {month_stoped_users}\n"
-                 f"Сумма оплат с начала месяца {month_pay_sum}"
+                 f"Сумма оплат с начала месяца {int(month_pay_sum)}"
         )
 
         await callback.message.answer(text=answer)

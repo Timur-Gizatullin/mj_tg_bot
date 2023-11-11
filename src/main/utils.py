@@ -15,10 +15,10 @@ user_uri = "admin/main/user/{}/change/"
 
 
 async def is_has_censor(message: str, censor_list: list[str]) -> bool:
-    message = message.lower()
+    words = message.lower().split(" ")
 
     for censor_word in censor_list:
-        if message.find(censor_word.lower()) != -1:
+        if censor_word in words:
             return False
 
     return True
