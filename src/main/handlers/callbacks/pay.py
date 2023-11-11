@@ -164,8 +164,10 @@ async def pay_options_callback(callback: types.CallbackQuery):
 
         if is_subscribed:
             user = await User.objects.get_user_by_chat_id(callback.message.chat.id)
-            user.balance += 5
-            await user.asave()
+            if not user.is_subscribed:
+                user.balance += 5
+                user.is_subscribed = True
+                await user.asave()
             reply = (
                 "🎉 🎉🎉Поздравляем! Пока Вы подписаны на наши каналы, "
                 "Вам будут начисляться 5 бесплатных токенов ежедневно!"

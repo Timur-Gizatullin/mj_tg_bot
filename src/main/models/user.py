@@ -95,6 +95,7 @@ class User(AbstractUser):
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")
     pending_state_at: datetime = models.DateTimeField(blank=True, null=True, verbose_name="Ожидает с")
+    is_subscribed: bool = models.BooleanField(default=False, verbose_name="Был подписан на все каналы")
     gen_date: datetime = models.DateTimeField(
         null=True, verbose_name="Дата последней генерации", auto_now=True, blank=True
     )
