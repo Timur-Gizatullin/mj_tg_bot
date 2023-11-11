@@ -272,9 +272,9 @@ async def gpt_choose_callback(callback: types.CallbackQuery):
         return
 
     try:
-        prompt = callback.message.text.split("\n\n")[choose - 1][2:]
+        prompt = callback.message.text.split("\n\n")[choose - 1]
     except Exception:
-        prompt = callback.message.text.split("\n")[choose - 1][2:]
+        prompt = callback.message.text.split("\n")[choose - 1]
 
     prompt = prompt if prompt[-1] != "." else prompt[:-1]
 
