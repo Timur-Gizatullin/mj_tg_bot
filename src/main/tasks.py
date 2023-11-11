@@ -1,9 +1,12 @@
+import asyncio
 import json
 from datetime import date, datetime
 
 import requests
 import xlsxwriter
 from aiogram import Bot
+from aiogram.enums import ParseMode
+from aiogram.types import InputMediaPhoto
 from asgiref.sync import async_to_sync
 from decouple import config
 from loguru import logger
@@ -14,7 +17,7 @@ from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User, C
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
-bot = Bot(token=config("TELEGRAM_TOKEN"))
+bot = Bot(token=config("TELEGRAM_TOKEN"), parse_mode=ParseMode.MARKDOWN)
 
 
 @app.task(bind=True, name="Рассылка")
@@ -26,15 +29,33 @@ def send_message_to_users(
     offset: int | None = None,
     pay_date: datetime | None = None,
     gen_date: datetime | None = None,
+    photos: list[str] | None = None
 ):
-    users = User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date)
-    for user in users:
-        response = requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={user.chat_id}&text={message}"
-        )
-        if not response.ok:
-            user.is_active = False
-            user.save()
+    users = list(User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date))
+    async def task(users: list[User], message: str, photos: list[str] | None):
+        for user in users:
+            try:
+                if not photos:
+                    response = await bot.send_message(chat_id=user.chat_id, text=message)
+                else:
+                    if len(photos) == 1:
+                        response = await bot.send_photo(chat_id=user.chat_id, photo=photos[0], caption=message)
+                    else:
+                        media = []
+                        for photo in photos:
+                            media.append(InputMediaPhoto(media=photo))
+                        await bot.send_message(chat_id=user.chat_id, text=message)
+                        response = await bot.send_media_group(chat_id=user.chat_id, media=media)
+            except Exception as e:
+                response = None
+            # response = requests.post(
+            #     f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={user.chat_id}&text={message}"
+            # )
+            if not response:
+                user.is_active = False
+                await user.asave()
+
+    asyncio.get_event_loop().run_until_complete(task(users, message, photos))
 
 
 @app.task(bind=True, name="Загрузить пользователей")

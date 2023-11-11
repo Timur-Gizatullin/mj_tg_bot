@@ -281,7 +281,9 @@ async def gpt_handler(message: types.Message):
     if not user:
         await message.answer("Напишите боту /start")
         return
-
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.gpt)
+    if not await is_enough_balance(telegram_user=user, message=message, amount=option_price.price):
+        return
     if user.state == UserStateEnum.PENDING:
         await message.answer("🛑 Пожалуйста дождитесь завершения предыдущего запроса!")
         return

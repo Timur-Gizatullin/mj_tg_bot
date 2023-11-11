@@ -72,7 +72,7 @@ def check_subscriptions():
                         logger.warning(e)
 
     try:
-        async_to_sync(task, force_new_loop=True)(users, channels)
+        asyncio.get_event_loop().run_until_complete(task(users, channels))
     except Exception as e:
         logger.error(e)
 
