@@ -71,6 +71,11 @@ class DiscordMiddleWare(discord.Client):
                 reply_markup=keyboard,
                 parse_mode=ParseMode.MARKDOWN,
             )
+            await bot.send_message(
+                chat_id=describe_object.chat_id,
+                text=f"Баланс в токенах: {user.balance}\n\n*Примеры генераций:* \n{resources}",
+                parse_mode=ParseMode.MARKDOWN_V2,
+            )
             await QueueHandler.exclude_queue(describe_object.chat_id, telegram_user=user)
             await RedisMjUserTokenQueue().update_sender(is_fail=False, user=user)
 
