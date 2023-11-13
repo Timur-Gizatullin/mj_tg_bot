@@ -291,6 +291,10 @@ async def gpt_handler(message: types.Message):
         await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
         return
 
+    if message.text == "":
+        await message.answer(text="🚨Пожалуйста приложите файл ссылкой!")
+        return
+
     user.state = UserStateEnum.PENDING
     user.pending_state_at = datetime.datetime.now()
     await user.asave()
