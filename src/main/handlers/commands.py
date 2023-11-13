@@ -291,7 +291,7 @@ async def gpt_handler(message: types.Message):
         await message.answer("🛑 Ваш аккаунт был ограничен, обратитесь к администратору")
         return
 
-    if message.text == "":
+    if message.photo == "" or message.text is None:
         await message.answer(text="🚨Пожалуйста приложите файл ссылкой!")
         return
 

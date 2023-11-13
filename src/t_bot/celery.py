@@ -47,7 +47,7 @@ banned_message_answer = """⛔️Возможно Ваш запрос не пр�
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, check_queue.s())
-    sender.add_periodic_task(crontab(minute=10, hour=0), check_subscriptions.s())
+    sender.add_periodic_task(crontab(minute="0", hour="0"), check_subscriptions.s())
 
 
 @app.task()
