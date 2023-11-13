@@ -48,9 +48,6 @@ def send_message_to_users(
                         response = await bot.send_media_group(chat_id=user.chat_id, media=media)
             except Exception as e:
                 response = None
-            # response = requests.post(
-            #     f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={user.chat_id}&text={message}"
-            # )
             if not response:
                 user.is_active = False
                 await user.asave()
@@ -86,7 +83,7 @@ def load_ban_words(self):
 
 @app.task(bind=True, name="Обновить дс акаунты")
 def update_ds_accounts(self):
-    async_to_sync(RedisMjUserTokenQueue().start, force_new_loop=True)()
+    asyncio.get_event_loop().run_until_complete(RedisMjUserTokenQueue().start())
 
 
 @app.task(bind=True, name="Статистика рефералы")
@@ -126,7 +123,7 @@ def get_ref_stat(self, chat_id):
 
 @app.task(bind=True, name="Статистика")
 def get_main_stat(self, start, end, chat_id):
-    workbook = xlsxwriter.Workbook(f"ref_stat.xlsx")
+    workbook = xlsxwriter.Workbook(f"user_stat.xlsx")
     worksheet = workbook.add_worksheet()
 
     worksheet.write("A1", "Номер")

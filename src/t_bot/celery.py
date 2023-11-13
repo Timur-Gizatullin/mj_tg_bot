@@ -8,6 +8,7 @@ from aiogram import Bot
 from aiogram.enums import ChatMemberStatus, ParseMode
 from asgiref.sync import async_to_sync
 from celery import Celery
+from celery.schedules import crontab
 from django.conf import settings
 
 from t_bot.settings import TELEGRAM_TOKEN
@@ -46,7 +47,7 @@ banned_message_answer = """⛔️Возможно Ваш запрос не пр�
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, check_queue.s())
-    sender.add_periodic_task(60.0 * 60 * 24, check_subscriptions.s())
+    sender.add_periodic_task(crontab(minute=10, hour=0), check_subscriptions.s())
 
 
 @app.task()

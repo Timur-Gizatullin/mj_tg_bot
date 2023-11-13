@@ -69,6 +69,7 @@ services:
         timeout: 10s
         retries: 3
   worker:
+    restart: always
     build:
       context: .
       dockerfile: ./Dockerfile
