@@ -6,7 +6,7 @@ from aiogram import Router, types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, UserStateEnum, PriceEnum
+from main.enums import AnswerTypeEnum, PriceEnum, UserStateEnum
 from main.handlers.commands import bot
 from main.handlers.helpers import (
     get_gpt_prompt_suggestions,
@@ -16,25 +16,25 @@ from main.handlers.helpers import (
     is_ready,
 )
 from main.handlers.utils.interactions import (
+    describe_reset_trigger,
     imagine_trigger,
     send_pan_trigger,
     send_reset_trigger,
     send_upsample_trigger,
     send_variation_trigger,
     send_vary_trigger,
-    send_zoom_trigger, describe_reset_trigger,
+    send_zoom_trigger,
 )
 from main.utils import callback_data_util, is_has_censor
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.models import BanWord, Prompt, TelegramAnswer, User, OptionPrice  # noqa: E402
+from main.models import BanWord, OptionPrice, Prompt, TelegramAnswer, User  # noqa: E402
 
 mj_router = Router()
 
-help_message = (
-    """
+help_message = """
 🪄*Vary Strong* - вносит больше изменений в создаваемые вариации, увеличивает уровень художественности и воображаемых элементов
 
 🪄*Vary stable* - вносит небольшие изменения в создаваемые вариации, приближает изображение к стандартным 
@@ -45,7 +45,6 @@ help_message = (
 
 ⬅️⬆️⬇️➡️ расширяет изображение в указанную сторону, дорисовывая объект и фон
     """
-)
 
 
 @mj_router.callback_query(lambda c: c.data.startswith("V"))
@@ -83,7 +82,11 @@ async def callbacks_upsamples_v5(callback: types.CallbackQuery):
     queue: Prompt = await Prompt.objects.get_prompt_by_message_hash(message_hash=message_hash)
     telegram_user = await User.objects.get_user_by_chat_id(chat_id=queue.telegram_chat_id)
 
-    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_2x) if action == "2x" else await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_4x)
+    option_price = (
+        await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_2x)
+        if action == "2x"
+        else await OptionPrice.objects.get_price_by_product(PriceEnum.upscale__v5_4x)
+    )
     if not await is_can_use(telegram_user, callback, option_price.price):
         return
 

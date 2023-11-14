@@ -19,7 +19,7 @@ class UserManager(AbstractUserManager):
         for pending_user in pending_users:
             if pending_user.pending_state_at:
                 diff = datetime.now(timezone.utc) - pending_user.pending_state_at
-                if diff >= timedelta(seconds=15*60):
+                if diff >= timedelta(seconds=15 * 60):
                     pending_user.pending_state_at = None
                     pending_user.state = UserStateEnum.READY
                     pending_user.save()

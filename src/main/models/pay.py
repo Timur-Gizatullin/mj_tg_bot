@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
 
 from asgiref.sync import sync_to_async
@@ -18,10 +18,16 @@ class PayManager(models.Manager):
 
     @sync_to_async()
     def get_today_pay_sum(self):
-        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(
-            created_at__contains=date.today())
-        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(
-            created_at__contains=date.today())
+        yookassa_pays = (
+            self.filter(merchant=MerchantEnum.YOOKASSA)
+            .exclude(is_verified=False)
+            .filter(created_at__contains=date.today())
+        )
+        wallet_pays = (
+            self.filter(merchant=MerchantEnum.WALLET)
+            .exclude(is_verified=False)
+            .filter(created_at__contains=date.today())
+        )
 
         total_sum = 0
 
@@ -35,10 +41,16 @@ class PayManager(models.Manager):
 
     @sync_to_async()
     def get_month_pay_sum(self):
-        yookassa_pays = self.filter(merchant=MerchantEnum.YOOKASSA).exclude(is_verified=False).filter(
-            created_at__month=date.today().month)
-        wallet_pays = self.filter(merchant=MerchantEnum.WALLET).exclude(is_verified=False).filter(
-            created_at__month=date.today().month)
+        yookassa_pays = (
+            self.filter(merchant=MerchantEnum.YOOKASSA)
+            .exclude(is_verified=False)
+            .filter(created_at__month=date.today().month)
+        )
+        wallet_pays = (
+            self.filter(merchant=MerchantEnum.WALLET)
+            .exclude(is_verified=False)
+            .filter(created_at__month=date.today().month)
+        )
 
         total_sum = 0
 

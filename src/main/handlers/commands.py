@@ -13,12 +13,7 @@ from decouple import config
 from loguru import logger
 
 from main.constants import BOT_START_HOST
-from main.enums import (
-    AnswerTypeEnum,
-    PriceEnum,
-    UserRoleEnum,
-    UserStateEnum,
-)
+from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
 from main.handlers.helpers import is_enough_balance
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL

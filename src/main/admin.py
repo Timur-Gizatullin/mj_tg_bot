@@ -14,6 +14,7 @@ from main.models import (
     Referral,
     TelegramAnswer,
     User,
+    MessageNotify,
 )
 from main.models.pay import PayAudit
 from main.models.user import UserAudit
@@ -31,3 +32,4 @@ admin.site.register(Price)
 admin.site.register(Channel)
 admin.site.register(DsMjUser)
 admin.site.register(OptionPrice)
+admin.site.register(MessageNotify)

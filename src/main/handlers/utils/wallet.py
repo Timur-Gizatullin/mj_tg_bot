@@ -41,7 +41,7 @@ async def get_pay_link(
     pay_id = data["data"]["id"]
     user: User = await User.objects.get_user_by_chat_id(chat_id)
     logger.debug("create pay")
-    pay_dto = Pay(amount=amount*100, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
+    pay_dto = Pay(amount=amount * 100, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
     await pay_dto.asave()
     logger.debug("return paylink")
 

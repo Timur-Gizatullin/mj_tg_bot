@@ -129,7 +129,6 @@ async def imagine_trigger(message, prompt, user):
     await QueueHandler.include_queue(payload=payload, header=header, message=message, action="imagine")
 
 
-
 async def describe_reset_trigger(message_id: str, message, user):
     kwargs = {
         "message_flags": 0,

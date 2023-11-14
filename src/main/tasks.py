@@ -11,9 +11,9 @@ from asgiref.sync import async_to_sync
 from decouple import config
 from loguru import logger
 
-from main.enums import UserRoleEnum, MerchantEnum
+from main.enums import MerchantEnum, UserRoleEnum
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
-from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User, Channel
+from main.models import BanWord, Blend, Channel, Describe, Pay, Prompt, Referral, User, MessageNotify
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -23,15 +23,16 @@ bot = Bot(token=config("TELEGRAM_TOKEN"), parse_mode=ParseMode.MARKDOWN)
 @app.task(bind=True, name="Рассылка")
 def send_message_to_users(
     self,
-    message: str | None = None,
+    message_id: int,
     role: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     pay_date: datetime | None = None,
     gen_date: datetime | None = None,
-    photos: list[str] | None = None
+    photos: list[str] | None = None,
 ):
     users = list(User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date))
+
     async def task(users: list[User], message: str, photos: list[str] | None):
         for user in users:
             try:
@@ -52,7 +53,12 @@ def send_message_to_users(
                 user.is_active = False
                 await user.asave()
 
-    asyncio.get_event_loop().run_until_complete(task(users, message, photos))
+    message = MessageNotify.objects.filter(pk=message_id).first()
+
+    if message:
+        asyncio.get_event_loop().run_until_complete(task(users, message, photos))
+    else:
+        logger.warning("Указанного сообщения не существует")
 
 
 @app.task(bind=True, name="Загрузить пользователей")
@@ -154,7 +160,7 @@ def get_main_stat(self, start, end, chat_id):
             if pay.merchant == MerchantEnum.YOOKASSA:
                 pay_sum += pay.amount
             else:
-                pay_sum += pay.amount*100
+                pay_sum += pay.amount
 
         worksheet.write(f"A{i + 2}", f"{i}")
         worksheet.write(f"B{i+2}", f"{user.telegram_username}")
