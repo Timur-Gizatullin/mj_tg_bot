@@ -148,7 +148,7 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
 
         option_price: OptionPrice = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
         telegram_user.balance -= option_price.price
-        if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
+        if telegram_user.balance <= 5 and telegram_user.role != UserRoleEnum.ADMIN:
             telegram_user.role = UserRoleEnum.BASE
         telegram_user.state = UserStateEnum.READY
         await telegram_user.asave()

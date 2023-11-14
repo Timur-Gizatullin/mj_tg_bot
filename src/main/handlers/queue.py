@@ -142,7 +142,7 @@ async def update_user(qdata, telegram_user: User):
 
     telegram_user.balance -= option_price.price
 
-    if telegram_user.balance < 5 and telegram_user.role != UserRoleEnum.ADMIN:
+    if telegram_user.balance <= 5 and telegram_user.role != UserRoleEnum.ADMIN:
         telegram_user.role = UserRoleEnum.BASE
     telegram_user.state = UserStateEnum.READY
     await telegram_user.asave()
