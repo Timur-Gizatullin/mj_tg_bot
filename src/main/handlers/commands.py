@@ -17,7 +17,7 @@ from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
 from main.handlers.helpers import is_enough_balance
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
-from main.handlers.utils.interactions import _trigger_payload, blend_trigger
+from main.handlers.utils.interactions import _trigger_payload, blend_trigger, imagine_trigger
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
@@ -381,6 +381,7 @@ async def handle_imagine(message, img_url: str | None = None):
         ),
     )
     kb = builder.row(*prompt_buttons)
+
     await message.answer(suggestion, reply_markup=kb.as_markup())
 
 
@@ -419,6 +420,10 @@ async def blend_images_handler(message: Message):
 
 
 async def based_on_photo_imagine(message: Message, user):
+    option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.imagine)
+    if not await is_enough_balance(telegram_user=user, amount=option_price.price, message=message):
+        return
+
     file = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
     downloaded_file = await bot.download_file(file_path=file.file_path)
     token = await RedisMjUserTokenQueue().get_sender_token(user)
@@ -464,7 +469,9 @@ async def based_on_photo_imagine(message: Message, user):
 
     img_url = image_data["attachments"][0]["proxy_url"]
 
-    await handle_imagine(message=message, img_url=img_url)
+    prompt = f"{img_url} {message.caption}"
+
+    await imagine_trigger(message=message, prompt=prompt, user=user)
 
 
 async def describe_handler(message: Message):
