@@ -7,6 +7,12 @@ class DescribeManager(models.Manager):
     def get_describe_by_file_name(self, file_name: str) -> "Describe":
         return self.filter(file_name=file_name).first()
 
+    @sync_to_async()
+    def get_count(self, start, end, user):
+        return self.filter(
+                created_at__gte=start, created_at__lte=end, chat_id=user.chat_id
+            ).count()
+
 
 class Describe(models.Model):
     file_name: str = models.CharField(verbose_name="Имя файла")

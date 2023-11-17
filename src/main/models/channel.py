@@ -7,6 +7,10 @@ class ChannelManager(models.Manager):
     def get_all_channels(self):
         return list(self.exclude(label=None).all())
 
+    @sync_to_async()
+    def get_stat_channels(self):
+        return list(self.all())
+
 
 class Channel(models.Model):
     label: str = models.CharField(

@@ -62,6 +62,10 @@ class PayManager(models.Manager):
 
         return total_sum
 
+    @sync_to_async()
+    def get_all_by_filters(self, start, end, user):
+        return list(self.filter(is_verified=True, user=user, created_at__gte=start, created_at__lte=end).all())
+
 
 class Pay(models.Model):
     amount: Decimal = models.DecimalField(null=False, decimal_places=4, max_digits=12, verbose_name="Сумма оплаты")

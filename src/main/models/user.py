@@ -86,6 +86,14 @@ class UserManager(AbstractUserManager):
 
         return q_set
 
+    @sync_to_async()
+    def get_users_by_date(self, start_date, end_date):
+        return list(self.filter(gen_date__gte=start_date, gen_date__lte=end_date).all())
+
+    @sync_to_async()
+    def get_ref_count(self, start, end, user):
+        return self.filter(date_joined__gte=start, date_joined__lte=end, invited_by=user).count()
+
 
 class User(AbstractUser):
     username = models.CharField(null=True, unique=True, blank=True)

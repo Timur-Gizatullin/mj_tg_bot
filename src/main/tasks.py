@@ -5,15 +5,15 @@ from datetime import date, datetime
 import requests
 import xlsxwriter
 from aiogram import Bot
-from aiogram.enums import ParseMode
+from aiogram.enums import ParseMode, ChatMemberStatus
 from aiogram.types import InputMediaPhoto
-from asgiref.sync import async_to_sync
+from asgiref.sync import sync_to_async
 from decouple import config
 from loguru import logger
 
 from main.enums import MerchantEnum, UserRoleEnum
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
-from main.models import BanWord, Blend, Channel, Describe, Pay, Prompt, Referral, User, MessageNotify
+from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User, MessageNotify, Channel
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -129,53 +129,73 @@ def get_ref_stat(self, chat_id):
 
 @app.task(bind=True, name="Статистика")
 def get_main_stat(self, start, end, chat_id):
-    workbook = xlsxwriter.Workbook(f"user_stat.xlsx")
-    worksheet = workbook.add_worksheet()
+    async def task(start, end, chat_id):
+        workbook = xlsxwriter.Workbook(f"user_stat.xlsx")
+        worksheet = workbook.add_worksheet()
 
-    worksheet.write("A1", "Номер")
-    worksheet.write("B1", "Telegram никнейм")
-    worksheet.write("C1", "Статус")
-    worksheet.write("D1", "Дата старта бота")
-    worksheet.write("E1", "колличество генераций за период")
-    worksheet.write("F1", "Остаток баланса")
-    worksheet.write("G1", "Сумма покупок за период")
-    worksheet.write("H1", "Колличество реферралов")
+        worksheet.write("A1", "Номер")
+        worksheet.write("B1", "Telegram никнейм")
+        worksheet.write("C1", "Статус")
+        worksheet.write("D1", "Дата старта бота")
+        worksheet.write("E1", "колличество генераций за период")
+        worksheet.write("F1", "Остаток баланса")
+        worksheet.write("G1", "Сумма покупок за период")
+        worksheet.write("H1", "Колличество реферралов")
 
-    users = User.objects.filter(gen_date__gte=start, gen_date__lte=end).all()
+        channels = await Channel.objects.get_stat_channels()
 
-    for i, user in enumerate(users):
-        blend_count = Blend.objects.filter(created_at__gte=start, created_at__lte=end, user=user).count()
-        describe_count = Describe.objects.filter(
-            created_at__gte=start, created_at__lte=end, chat_id=user.chat_id
-        ).count()
-        prompt_count = Prompt.objects.filter(created_at__gte=start, created_at__lte=end, telegram_user=user).count()
+        for i, channel in enumerate(channels):
+            worksheet.write(0, 8+i, channel.label)
 
-        pays = Pay.objects.filter(is_verified=True, user=user, created_at__gte=start, created_at__lte=end).all()
+        users = await User.objects.get_users_by_date(start, end)
 
-        ref_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end, invited_by=user).count()
+        for i, user in enumerate(users):
+            blend_count = await Blend.objects.get_blend_count_by_user(start, end, user)
+            describe_count = await Describe.objects.get_count(
+                start, end, user
+            )
+            prompt_count = await Prompt.objects.get_count(start, end, user)
 
-        pay_sum = 0
+            pays = await Pay.objects.get_all_by_filters(start, end, user)
 
-        for pay in pays:
-            if pay.merchant == MerchantEnum.YOOKASSA:
-                pay_sum += pay.amount
-            else:
-                pay_sum += pay.amount
+            ref_count = await User.objects.get_ref_count(start, end, user)
 
-        worksheet.write(f"A{i + 2}", f"{i}")
-        worksheet.write(f"B{i+2}", f"{user.telegram_username}")
-        worksheet.write(f"C{i+2}", f"{user.state}")
-        worksheet.write(f"D{i+2}", f"{user.date_joined}")
-        worksheet.write(f"E{i+2}", f"{blend_count+describe_count+prompt_count}")
-        worksheet.write(f"F{i+2}", f"{user.balance}")
-        worksheet.write(f"G{i+2}", f"{pay_sum}")
-        worksheet.write(f"H{i+2}", f"{ref_count}")
+            pay_sum = 0
 
-    workbook.close()
+            for pay in pays:
+                if pay.merchant == MerchantEnum.YOOKASSA:
+                    pay_sum += pay.amount
+                else:
+                    pay_sum += pay.amount
 
-    with open(workbook.filename, "rb") as f:
-        d = {"document": f}
-        r = requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument", files=d, data={"chat_id": chat_id}
-        )
-        logger.warning(r)
+            worksheet.write(f"A{i + 2}", f"{i}")
+            worksheet.write(f"B{i+2}", f"{user.telegram_username}")
+            worksheet.write(f"C{i+2}", f"{user.state}")
+            worksheet.write(f"D{i+2}", f"{user.date_joined}")
+            worksheet.write(f"E{i+2}", f"{blend_count+describe_count+prompt_count}")
+            worksheet.write(f"F{i+2}", f"{user.balance}")
+            worksheet.write(f"G{i+2}", f"{pay_sum}")
+            worksheet.write(f"H{i+2}", f"{ref_count}")
+
+            for j, channel in enumerate(channels):
+                try:
+                    member = await bot.get_chat_member(f"@{channel.channel}", int(user.chat_id))
+                    text = "Вступил" if member.status == ChatMemberStatus.LEFT else "Не вступил"
+                except Exception as e:
+                    text = "Не вступил"
+                    logger.warning(f"User {user.telegram_username} has blocked bot")
+
+                worksheet.write(1 + i, j+8, text)
+
+        workbook.close()
+
+        with open(workbook.filename, "rb") as f:
+            d = {"document": f}
+            r = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument", files=d, data={"chat_id": chat_id}
+            )
+            logger.warning(r)
+    try:
+        asyncio.get_event_loop().run_until_complete(task(start, end, chat_id))
+    except Exception as e:
+        logger.warning(e)

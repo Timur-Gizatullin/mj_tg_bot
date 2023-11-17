@@ -108,7 +108,13 @@ def check_queue():
                     user.fail_in_row += 1
                     await user.asave()
 
-                    await bot.send_message(chat_id=user.chat_id, text=banned_message_answer)
+                    try:
+                        await bot.send_message(chat_id=user.chat_id, text=banned_message_answer)
+                    except Exception as e:
+                        user.is_active = False
+                        user.state = UserStateEnum.READY
+                        await user.asave()
+                        logger.warning(f"Bot has benn blocked, user is innactive now \n traceback is : {e}")
 
                     await RedisMjUserTokenQueue().update_sender(is_fail=True, user=user)
 

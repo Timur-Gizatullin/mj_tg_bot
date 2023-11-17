@@ -22,6 +22,10 @@ class BlendManager(models.Manager):
 
         return blend.first()
 
+    @sync_to_async()
+    def get_blend_count_by_user(self, start, end, user):
+        return self.filter(created_at__gte=start, created_at__lte=end, user=user).count()
+
 
 class Blend(models.Model):
     user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="blends", verbose_name="Пользователь")

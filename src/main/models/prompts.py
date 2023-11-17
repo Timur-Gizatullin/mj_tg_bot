@@ -13,6 +13,10 @@ class PromptManager(models.Manager):
     def get_message_by_discord_message_id(self, message_id):
         return self.filter(discord_message_id=message_id).first()
 
+    @sync_to_async()
+    def get_count(self, start, end, user):
+        return self.filter(created_at__gte=start, created_at__lte=end, telegram_user=user).count()
+
 
 class Prompt(models.Model):
     prompt = models.CharField(verbose_name="Промпт или действие")
