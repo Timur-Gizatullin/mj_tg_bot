@@ -38,7 +38,7 @@ class QueueHandler:
         if user.role == UserRoleEnum.ADMIN:
             await admin_mj_release(payload, header, message, action)
         else:
-            if r_queue.llen("queue") >= 3:
+            if r_queue.llen("queue") >= 12:
                 data = json.dumps(
                     {
                         "payload": payload,
