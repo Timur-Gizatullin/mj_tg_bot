@@ -135,7 +135,6 @@ def check_queue():
 
     try:
         asyncio.get_event_loop().run_until_complete(task(base_queue, admin_queue, time, queues))
-        # async_to_sync(task, force_new_loop=True)(base_queue, admin_queue, time, queues)
     except Exception as e:
         logger.error(e)
 

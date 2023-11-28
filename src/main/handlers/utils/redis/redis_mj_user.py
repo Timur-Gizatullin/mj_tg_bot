@@ -29,16 +29,16 @@ class RedisMjUserTokenQueue:
             return (r_queue.get("sender")).decode()
         elif r_queue.get("sender") is None:
             if user.role == UserRoleEnum.BASE:
-                return (r_queue.get("base_sender")).decode()
+                return (r_queue.get("base_sender")).decode() if (r_queue.get("base_sender")) else (r_queue.get("base_sender"))
             else:
-                return (r_queue.get("premium_sender")).decode()
+                return (r_queue.get("premium_sender")).decode() if (r_queue.get("premium_sender")) else (r_queue.get("premium_sender"))
         else:
             logger.warning("Обновите список миджорни аккаунтов")
 
     async def update_sender(self, is_fail: bool, user: User):
         if r_queue.get("sender"):
             await self._update_chosen_sender("sender", is_fail)
-        elif not r_queue.get("sender"):
+        elif not r_queue.get("sender") and r_queue.get("base_sender") and r_queue.get("premium_sender"):
             if user.role == UserRoleEnum.BASE:
                 await self._update_chosen_sender("base_sender", is_fail)
             else:
@@ -54,20 +54,24 @@ class RedisMjUserTokenQueue:
         await self._check_senders_for_availability()
 
     async def _update_chosen_sender(self, queue_name, is_fail):
-        token = (r_queue.get(queue_name)).decode()
-        sender = await DsMjUser.objects.get_sender_by_token(token=token)
-        if sender:
-            if is_fail:
-                sender.fail_in_row += 1
-                await sender.asave()
-                if sender.fail_in_row >= 15:
-                    sender.is_active = False
+        token = (r_queue.get(queue_name))
+        token = token.decode() if token else token
+
+        if token:
+            sender = await DsMjUser.objects.get_sender_by_token(token=token)
+            if sender:
+                if is_fail:
+                    sender.fail_in_row += 1
                     await sender.asave()
-                    await notify_admins(bot=bot, banned_mj_user=sender)
-                    r_queue.getdel(queue_name)
-            else:
-                sender.fail_in_row = 0
-                await sender.asave()
+                    if sender.fail_in_row >= 15:
+                        sender.is_active = False
+                        await sender.asave()
+                        await notify_admins(bot=bot, banned_mj_user=sender)
+                        r_queue.getdel(queue_name)
+                        logger.debug((r_queue.get(queue_name)).decode())
+                else:
+                    sender.fail_in_row = 0
+                    await sender.asave()
 
     async def _check_senders_for_availability(self):
         sender = r_queue.get("base_sender")
