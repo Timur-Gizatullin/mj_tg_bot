@@ -10,7 +10,6 @@ from loguru import logger
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "t_bot.settings")
 django.setup()
 
-from main.enums import UserStateEnum  # noqa:E402
 from main.handlers.callbacks.dalle import dalle_router  # noqa: E402
 from main.handlers.callbacks.gpt import gpt_router  # noqa: E402
 from main.handlers.callbacks.menu import menu_router  # noqa: E402
@@ -18,26 +17,7 @@ from main.handlers.callbacks.midjourney import mj_router  # noqa: E402
 from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.callbacks.stats import stat_router  # noqa:E402
 from main.handlers.commands import bot, dp  # noqa: E402
-from main.handlers.queue import r_queue  # noqa:E402
-from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue  # noqa:E402
-from main.models import User  # noqa:E402
-
-
-async def clear_queues():
-    for i in r_queue.lrange("queue", 0, -1):
-        logger.debug("Remove elements form queue")
-        r_queue.lpop("queue")
-    for i in r_queue.lrange("release", 0, -1):
-        logger.debug("Remove elements form release")
-        r_queue.lpop("release")
-    for i in r_queue.lrange("admin", 0, -1):
-        logger.debug("Remove elements form admin")
-        r_queue.lpop("admin")
-
-    users = await User.objects.get_pending_users()
-    for user in users:
-        user.state = UserStateEnum.READY
-        await user.asave()
+from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue, clear_queues  # noqa:E402
 
 
 async def main() -> None:

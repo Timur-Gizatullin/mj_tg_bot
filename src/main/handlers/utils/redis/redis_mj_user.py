@@ -3,7 +3,7 @@ from aiogram.enums import ParseMode
 from decouple import config
 from loguru import logger
 
-from main.enums import UserRoleEnum
+from main.enums import UserRoleEnum, UserStateEnum
 from main.handlers.queue import r_queue
 from main.models import DsMjUser, User
 from main.utils import notify_admins
@@ -12,8 +12,30 @@ from t_bot.settings import TELEGRAM_TOKEN
 bot = Bot(TELEGRAM_TOKEN, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
 
+async def clear_queues():
+    for i in r_queue.lrange("queue", 0, -1):
+        logger.debug("Remove elements form queue")
+        r_queue.lpop("queue")
+    for i in r_queue.lrange("release", 0, -1):
+        logger.debug("Remove elements form release")
+        r_queue.lpop("release")
+    for i in r_queue.lrange("admin", 0, -1):
+        logger.debug("Remove elements form admin")
+        r_queue.lpop("admin")
+
+    users = await User.objects.get_pending_users()
+    for user in users:
+        user.state = UserStateEnum.READY
+        await user.asave()
+
+
 class RedisMjUserTokenQueue:
     async def start(self):
+        r_queue.getdel("sender")
+        r_queue.getdel("base_sender")
+        r_queue.getdel("premium_sender")
+        await clear_queues()
+
         db_senders: list[DsMjUser] = await DsMjUser.objects.get_senders()
         if len(db_senders) != 0:
             if len(db_senders) == 1:
@@ -29,9 +51,11 @@ class RedisMjUserTokenQueue:
             return (r_queue.get("sender")).decode()
         elif r_queue.get("sender") is None:
             if user.role == UserRoleEnum.BASE:
-                return (r_queue.get("base_sender")).decode() if (r_queue.get("base_sender")) else (r_queue.get("base_sender"))
+                if r_queue.get("base_sender"):
+                    return (r_queue.get("base_sender")).decode()
             else:
-                return (r_queue.get("premium_sender")).decode() if (r_queue.get("premium_sender")) else (r_queue.get("premium_sender"))
+                if r_queue.get("premium_sender"):
+                    return (r_queue.get("premium_sender")).decode()
         else:
             logger.warning("Обновите список миджорни аккаунтов")
 
