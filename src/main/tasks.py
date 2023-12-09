@@ -5,15 +5,24 @@ from datetime import date, datetime
 import requests
 import xlsxwriter
 from aiogram import Bot
-from aiogram.enums import ParseMode, ChatMemberStatus
+from aiogram.enums import ChatMemberStatus, ParseMode
 from aiogram.types import InputMediaPhoto
-from asgiref.sync import sync_to_async
 from decouple import config
 from loguru import logger
 
 from main.enums import MerchantEnum, UserRoleEnum
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
-from main.models import BanWord, Blend, Describe, Pay, Prompt, Referral, User, MessageNotify, Channel
+from main.models import (
+    BanWord,
+    Blend,
+    Channel,
+    Describe,
+    MessageNotify,
+    Pay,
+    Prompt,
+    Referral,
+    User,
+)
 from t_bot.celery import app
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -134,7 +143,7 @@ def get_main_stat(self, start, end, chat_id):
         worksheet = workbook.add_worksheet()
 
         worksheet.write("A1", "Номер")
-        worksheet.write("B1", "Telegram никнейм")
+        worksheet.write("B1", "Telegram id")
         worksheet.write("C1", "Статус")
         worksheet.write("D1", "Дата старта бота")
         worksheet.write("E1", "колличество генераций за период")
@@ -145,15 +154,13 @@ def get_main_stat(self, start, end, chat_id):
         channels = await Channel.objects.get_stat_channels()
 
         for i, channel in enumerate(channels):
-            worksheet.write(0, 8+i, channel.label)
+            worksheet.write(0, 8 + i, channel.label)
 
         users = await User.objects.get_users_by_date(start, end)
 
         for i, user in enumerate(users):
             blend_count = await Blend.objects.get_blend_count_by_user(start, end, user)
-            describe_count = await Describe.objects.get_count(
-                start, end, user
-            )
+            describe_count = await Describe.objects.get_count(start, end, user)
             prompt_count = await Prompt.objects.get_count(start, end, user)
 
             pays = await Pay.objects.get_all_by_filters(start, end, user)
@@ -169,7 +176,7 @@ def get_main_stat(self, start, end, chat_id):
                     pay_sum += pay.amount
 
             worksheet.write(f"A{i + 2}", f"{i}")
-            worksheet.write(f"B{i+2}", f"{user.telegram_username}")
+            worksheet.write(f"B{i+2}", f"{user.chat_id}")
             worksheet.write(f"C{i+2}", f"{user.state}")
             worksheet.write(f"D{i+2}", f"{user.date_joined}")
             worksheet.write(f"E{i+2}", f"{blend_count+describe_count+prompt_count}")
@@ -185,7 +192,7 @@ def get_main_stat(self, start, end, chat_id):
                     text = "Не вступил"
                     logger.warning(f"User {user.telegram_username} has blocked bot")
 
-                worksheet.write(1 + i, j+8, text)
+                worksheet.write(1 + i, j + 8, text)
 
         workbook.close()
 
@@ -195,6 +202,7 @@ def get_main_stat(self, start, end, chat_id):
                 f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument", files=d, data={"chat_id": chat_id}
             )
             logger.warning(r)
+
     try:
         asyncio.get_event_loop().run_until_complete(task(start, end, chat_id))
     except Exception as e:

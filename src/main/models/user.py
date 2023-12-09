@@ -87,8 +87,8 @@ class UserManager(AbstractUserManager):
         return q_set
 
     @sync_to_async()
-    def get_users_by_date(self, start_date, end_date):
-        return list(self.filter(gen_date__gte=start_date, gen_date__lte=end_date).all())
+    def get_users_by_date(self):
+        return list(self.all())
 
     @sync_to_async()
     def get_ref_count(self, start, end, user):

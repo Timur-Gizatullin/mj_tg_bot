@@ -9,9 +9,7 @@ class DescribeManager(models.Manager):
 
     @sync_to_async()
     def get_count(self, start, end, user):
-        return self.filter(
-                created_at__gte=start, created_at__lte=end, chat_id=user.chat_id
-            ).count()
+        return self.filter(created_at__gte=start, created_at__lte=end, chat_id=user.chat_id).count()
 
 
 class Describe(models.Model):

@@ -78,7 +78,7 @@ class RedisMjUserTokenQueue:
         await self._check_senders_for_availability()
 
     async def _update_chosen_sender(self, queue_name, is_fail):
-        token = (r_queue.get(queue_name))
+        token = r_queue.get(queue_name)
         token = token.decode() if token else token
 
         if token:

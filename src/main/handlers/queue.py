@@ -7,9 +7,10 @@ from aiogram.enums import ParseMode
 from loguru import logger
 from redis import Redis
 
-from main.enums import PriceEnum, UserRoleEnum, UserStateEnum
+from main.enums import PriceEnum, UserRoleEnum, UserStateEnum, StatActionEnum
 from main.handlers.utils.const import INTERACTION_URL
 from main.models import OptionPrice, Price, User
+from main.models.stat import Stats
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
 
@@ -35,10 +36,16 @@ class QueueHandler:
         user.pending_state_at = datetime.now()
         await user.asave()
 
+        try:
+            new_stat = Stats(user=user, action=StatActionEnum.MJ_QUERY)
+            await new_stat.asave()
+        except Exception as e:
+            logger.debug(f"Не удалось добавить запись MJ_QUERY в статистику")
+
         if user.role == UserRoleEnum.ADMIN:
             await admin_mj_release(payload, header, message, action)
         else:
-            if r_queue.llen("queue") >= 12:
+            if r_queue.llen("queue") > 12:
                 data = json.dumps(
                     {
                         "payload": payload,

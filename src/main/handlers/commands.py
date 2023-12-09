@@ -13,11 +13,15 @@ from decouple import config
 from loguru import logger
 
 from main.constants import BOT_START_HOST
-from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum, StatActionEnum
 from main.handlers.helpers import is_enough_balance
 from main.handlers.queue import QueueHandler
 from main.handlers.utils.const import MESSAGES_URL
-from main.handlers.utils.interactions import _trigger_payload, blend_trigger, imagine_trigger
+from main.handlers.utils.interactions import (
+    _trigger_payload,
+    blend_trigger,
+    imagine_trigger,
+)
 from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue
 from main.keyboards.commands import get_commands_keyboard, resources
 from main.models import (
@@ -31,6 +35,7 @@ from main.models import (
     TelegramAnswer,
     User,
 )
+from main.models.stat import Stats
 from main.utils import (
     MenuState,
     callback_data_util,
@@ -340,6 +345,8 @@ async def gpt_handler(message: types.Message):
     await user.asave()
     await message.answer(text=f"Баланс в токенах {user.balance}")
 
+    new_stat = Stats(user=user, action=StatActionEnum.GPT_QUERY)
+    await new_stat.asave()
 
 @dp.message(MenuState.dalle)
 async def dale_handler(message: Message):

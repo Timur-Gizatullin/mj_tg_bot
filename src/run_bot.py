@@ -17,7 +17,10 @@ from main.handlers.callbacks.midjourney import mj_router  # noqa: E402
 from main.handlers.callbacks.pay import pay_router  # noqa: E402
 from main.handlers.callbacks.stats import stat_router  # noqa:E402
 from main.handlers.commands import bot, dp  # noqa: E402
-from main.handlers.utils.redis.redis_mj_user import RedisMjUserTokenQueue, clear_queues  # noqa:E402
+from main.handlers.utils.redis.redis_mj_user import (  # noqa:E402
+    RedisMjUserTokenQueue,
+    clear_queues,
+)
 
 
 async def main() -> None:

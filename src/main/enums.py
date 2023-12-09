@@ -58,3 +58,9 @@ class PriceEnum(BaseStrEnum):
     upscale__v5_4x = "upscale__v5_4x"
     dalle = "dalle"
     gpt = "gpt"
+
+
+class StatActionEnum(BaseStrEnum):
+    MJ_QUERY = "MJ_QUERY"
+    GPT_QUERY = "GPT_QUERY"
+    DALLE_QUERY = "DALLE_QUERY"

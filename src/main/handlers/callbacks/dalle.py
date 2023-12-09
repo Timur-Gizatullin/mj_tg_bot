@@ -8,11 +8,12 @@ from aiogram.types import BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from loguru import logger
 
-from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum
+from main.enums import AnswerTypeEnum, PriceEnum, UserRoleEnum, UserStateEnum, StatActionEnum
 from main.handlers.commands import bot
 from main.handlers.helpers import gpt_translate, is_can_use, is_enough_balance, is_ready
 from main.keyboards.commands import resources
 from main.models import BanWord, OptionPrice, TelegramAnswer, User
+from main.models.stat import Stats
 from main.utils import callback_data_util, is_has_censor
 
 dalle_router = Router()
@@ -80,6 +81,9 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
 
             await answer.edit_text(text=prompt_suggestions.choices[0].message.content, reply_markup=builder.as_markup())
             await callback.message.answer(text=f"Ваш баланс в токенах: {user.balance}")
+
+            new_stat = Stats(user=user, action=StatActionEnum.GPT_QUERY)
+            await new_stat.asave()
             return
         if action == "stay":
             option_price = await OptionPrice.objects.get_price_by_product(PriceEnum.dalle)
@@ -108,6 +112,8 @@ async def dalle_suggestion_callback(callback: types.CallbackQuery):
                 text=f"Баланс в токенах {user.balance}\n*Примеры генераций* \n{resources}",
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
+            new_stat = Stats(user=user, action=StatActionEnum.DALLE_QUERY)
+            await new_stat.asave()
             return
     except Exception as e:
         logger.error(e)
@@ -157,6 +163,9 @@ async def gpt_dalle_choose_callback(callback: types.CallbackQuery):
             text=f"Баланс в токенах {telegram_user.balance}\n*Примеры генераций* \n{resources}",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
+
+        new_stat = Stats(user=telegram_user, action=StatActionEnum.DALLE_QUERY)
+        await new_stat.asave()
     except Exception as e:
         logger.error(e)
         telegram_user.state = UserStateEnum.READY

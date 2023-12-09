@@ -7,6 +7,7 @@ from main.models import (
     Describe,
     DsMjUser,
     GptContext,
+    MessageNotify,
     OptionPrice,
     Pay,
     Price,
@@ -14,7 +15,6 @@ from main.models import (
     Referral,
     TelegramAnswer,
     User,
-    MessageNotify,
 )
 from main.models.pay import PayAudit
 from main.models.user import UserAudit
