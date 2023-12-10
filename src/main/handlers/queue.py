@@ -9,7 +9,8 @@ from redis import Redis
 
 from main.enums import PriceEnum, UserRoleEnum, UserStateEnum, StatActionEnum
 from main.handlers.utils.const import INTERACTION_URL
-from main.models import OptionPrice, Price, User
+from main.handlers.utils.proxy import get_proxy
+from main.models import OptionPrice, Price, User, DsMjUser
 from main.models.stat import Stats
 from t_bot.caches import CONFIG_REDIS_HOST, CONFIG_REDIS_PASSWORD
 from t_bot.settings import TELEGRAM_TOKEN
@@ -73,7 +74,9 @@ async def admin_mj_release(payload, header, message, action):
     r_queue.rpush(f"admin", message.chat.id)
     r_queue.rpush(f"{message.chat.id}", data)
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
+    proxies = await get_proxy(header=header)
+
+    response = requests.post(INTERACTION_URL, json=payload, headers=header, proxies=proxies)
     logger.debug(response.text)
     if response.ok:
         await message.answer(text="Идет генерация... ⌛")
@@ -94,7 +97,9 @@ async def base_release(payload, header, action, message, user):
     r_queue.rpush(f"queue", message.chat.id)
     r_queue.rpush(f"{message.chat.id}", data)
 
-    response = requests.post(INTERACTION_URL, json=payload, headers=header)
+    proxies = await get_proxy(header=header)
+
+    response = requests.post(INTERACTION_URL, json=payload, headers=header, proxies=proxies)
     logger.debug(response.text)
     if response.ok:
         await message.answer(text="Идет генерация... ⌛")
@@ -131,7 +136,10 @@ async def base_exclude(chat_id, telegram_user):
 
         r_queue.rpush("queue", str(chat_id))
         r_queue.rpush(f"{chat_id}", json.dumps(data))
-        response = requests.post(INTERACTION_URL, json=data["payload"], headers=data["header"])
+
+        proxies = await get_proxy(header=data["header"])
+
+        response = requests.post(INTERACTION_URL, json=data["payload"], headers=data["header"], proxies=proxies)
         if response.ok:
             await bot.send_message(chat_id=chat_id, text="Идет генерация... ⌛")
         else:

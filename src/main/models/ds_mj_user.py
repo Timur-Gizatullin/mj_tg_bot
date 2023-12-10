@@ -21,6 +21,7 @@ class DsMjUser(models.Model):
     token: str = models.CharField(unique=True, null=False, verbose_name="Токен")
     is_active: str = models.BooleanField(default=True, verbose_name="Активный")
     fail_in_row: str = models.IntegerField(default=0, verbose_name="Ошибок подряд")
+    proxy: str = models.CharField(null=True, default=None, blank=True, verbose_name="прокси", help_text="Указывать только адрес без протокола")
 
     class Meta:
         verbose_name = "Дискорд аккаунт"
