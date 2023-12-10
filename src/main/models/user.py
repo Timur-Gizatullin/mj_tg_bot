@@ -87,7 +87,7 @@ class UserManager(AbstractUserManager):
         return q_set
 
     @sync_to_async()
-    def get_users_by_date(self):
+    def get_users(self):
         return list(self.all())
 
     @sync_to_async()

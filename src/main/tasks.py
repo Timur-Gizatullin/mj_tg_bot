@@ -156,7 +156,7 @@ def get_main_stat(self, start, end, chat_id):
         for i, channel in enumerate(channels):
             worksheet.write(0, 8 + i, channel.label)
 
-        users = await User.objects.get_users_by_date(start, end)
+        users = await User.objects.get_users()
 
         for i, user in enumerate(users):
             blend_count = await Blend.objects.get_blend_count_by_user(start, end, user)
