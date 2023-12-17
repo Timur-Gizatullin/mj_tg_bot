@@ -60,6 +60,7 @@ class DiscordMiddleWare(discord.Client):
 
             image_proxy_url = message_after.embeds[0].image.proxy_url
             file_name = image_proxy_url.split("/")[-1]
+            file_name = file_name.split("?")[0] if "?" in file_name else file_name
             describe_object: Describe = await Describe.objects.get_describe_by_file_name(file_name)
             logger.debug("Send edited message to telegram")
             user = await User.objects.get_user_by_chat_id(describe_object.chat_id)
