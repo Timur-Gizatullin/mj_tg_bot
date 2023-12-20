@@ -1,3 +1,5 @@
+from typing import Any
+
 import requests
 from decouple import config
 from loguru import logger
@@ -17,7 +19,7 @@ WALLET_HEADERS = {
 
 async def get_pay_link(
     amount: str, description: str, customer_id: str, chat_id: str, token_count: int, externalId
-) -> str | None:
+) -> tuple[Any, Any] | None:
     payload = {
         "amount": {
             "currencyCode": "USD",
@@ -41,7 +43,7 @@ async def get_pay_link(
     pay_id = data["data"]["id"]
     user: User = await User.objects.get_user_by_chat_id(chat_id)
     logger.debug("create pay")
-    pay_dto = Pay(amount=amount * 100, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
+    pay_dto = Pay(amount=float(amount) * 100, token_count=token_count, pay_id=pay_id, user=user, merchant=MerchantEnum.WALLET)
     await pay_dto.asave()
     logger.debug("return paylink")
 
