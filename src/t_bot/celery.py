@@ -48,6 +48,15 @@ banned_message_answer = """⛔️Возможно Ваш запрос не пр�
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, check_queue.s())
     sender.add_periodic_task(crontab(minute="0", hour="0"), check_subscriptions.s())
+    sender.add_periodic_task(crontab(minute="0", hour="0"), check_role.s())
+
+
+@app.task()
+def check_role():
+    users: list[User] = list(User.objects.filter(balance__lte=5).all())
+    for user in users:
+        user.role = UserRoleEnum.BASE
+        user.save()
 
 
 @app.task()
