@@ -98,7 +98,7 @@ class UserManager(AbstractUserManager):
 class User(AbstractUser):
     username = models.CharField(null=True, unique=True, blank=True)
     telegram_username: str = models.CharField(unique=True, null=True, verbose_name="Юзернейм в телеграме", blank=True)
-    chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм")
+    chat_id: str = models.CharField(unique=True, null=True, verbose_name="ID чата телеграм", blank=True)
     balance: int = models.IntegerField(null=False, default=15, verbose_name="Баланс в токенах")
     role = models.CharField(choices=UserRoleEnum.get_choices(), default=UserRoleEnum.BASE, verbose_name="Роль")
     state = models.CharField(choices=UserStateEnum.get_choices(), default=UserStateEnum.READY, verbose_name="Состояние")

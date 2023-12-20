@@ -42,6 +42,8 @@ def send_message_to_users(
 ):
     users = list(User.objects.get_users_to_send_message(role, limit, offset, pay_date, gen_date))
 
+    logger.debug(f"Send to {len(users)} users")
+
     async def task(users: list[User], message: str, photos: list[str] | None):
         for user in users:
             try:
@@ -58,14 +60,14 @@ def send_message_to_users(
                         response = await bot.send_media_group(chat_id=user.chat_id, media=media)
             except Exception as e:
                 response = None
-            if not response:
+            if not response and user.role != UserRoleEnum.ADMIN:
                 user.is_active = False
                 await user.asave()
 
     message = MessageNotify.objects.filter(pk=message_id).first()
 
     if message:
-        asyncio.get_event_loop().run_until_complete(task(users, message, photos))
+        asyncio.get_event_loop().run_until_complete(task(users, message.text, photos))
     else:
         logger.warning("Указанного сообщения не существует")
 
